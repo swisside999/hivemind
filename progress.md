@@ -45,9 +45,16 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [x] Company Feed (DIRECT/FEED toggle, inter-agent message wiretap)
 - [x] Git integration (auto-commit agent work, commit events in ticket timeline)
 
+### Phase 5.5: Security & Quality Hardening
+- [x] 7 critical security fixes (command injection, XSS, path traversal, agent spoofing, auth)
+- [x] 14 major correctness fixes (listener leaks, race conditions, persist safety, UX)
+- [x] Brand identity (pixel-art logo, favicon, social card, color palette, README banner)
+
 ## Timeline
 - 2026-04-06: Full project built from scratch through Phase 5
 - 2026-04-06: Phase 7 open source infrastructure created
+- 2026-04-06: 21 security/correctness fixes from code review
+- 2026-04-06: Brand identity assets integrated
 
 ---
 
@@ -60,7 +67,7 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [ ] Autonomous operation mode — continuous work with minimal user intervention
 
 ### Phase 7: Open Source Launch
-- [ ] Brand identity (logo, color system, tagline) — see brief in CLAUDE.md
+- [x] Brand identity (pixel-art logo, favicon, social card, color palette, README banner)
 - [x] CONTRIBUTING.md with PR workflow, code standards, project structure
 - [x] Issue templates (bug report, feature request, agent definition)
 - [x] Code of Conduct (Contributor Covenant)

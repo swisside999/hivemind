@@ -18,7 +18,7 @@
   },
   "pnpm": {
     "executionEnv": {
-      "nodeVersion": "23.11.0"
+      "nodeVersion": "22.15.0"
     },
     "onlyBuiltDependencies": [
       "esbuild"

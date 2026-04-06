@@ -13,7 +13,7 @@ Thanks for your interest in contributing to Hivemind! Whether you're fixing a bu
 ### Getting Started
 
 ```bash
-git clone https://github.com/your-org/hivemind.git
+git clone https://github.com/swisside999/hivemind.git
 cd hivemind
 pnpm install
 ```
@@ -78,15 +78,15 @@ Then restart the server to load the project's agents.
 
 ### Bug Fixes
 
-Found a bug? [Open an issue](../../issues/new?template=bug_report.md) first, then submit a PR referencing it.
+Found a bug? [Open an issue](https://github.com/swisside999/hivemind/issues/new?template=bug_report.md) first, then submit a PR referencing it.
 
 ### New Features
 
-For significant features, [open a feature request](../../issues/new?template=feature_request.md) first to discuss the approach before investing time in implementation.
+For significant features, [open a feature request](https://github.com/swisside999/hivemind/issues/new?template=feature_request.md) first to discuss the approach before investing time in implementation.
 
 ### Agent Definitions
 
-One of the easiest ways to contribute is creating new agent role definitions. See the [agent definition template](../../issues/new?template=agent_definition.md) for the format.
+One of the easiest ways to contribute is creating new agent role definitions. See the [agent definition template](https://github.com/swisside999/hivemind/issues/new?template=agent_definition.md) for the format.
 
 Agent `.md` files live in `packages/server/templates/default-company/` and follow this structure:
 
@@ -94,8 +94,10 @@ Agent `.md` files live in `packages/server/templates/default-company/` and follo
 ---
 name: agent-slug
 display_name: "Display Name"
+description: "What this agent does and when it should be activated"
 role: custom
 color: "#hexcolor"
+icon_props: []
 reports_to: parent-slug
 direct_reports: []
 authority_level: 1-5
@@ -148,4 +150,4 @@ hivemind/
 
 ## Questions?
 
-Open a [discussion](../../discussions) or reach out via issues. We're happy to help!
+Open a [discussion](https://github.com/swisside999/hivemind/discussions) or reach out via issues. We're happy to help!

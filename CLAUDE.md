@@ -80,6 +80,7 @@ Then restart the server to load the project's agents.
 - **Error handling everywhere** — no swallowed errors, no bare catches.
 - **Minimal dependencies** — justify every `npm install`.
 - **Self-review all code** against senior-code-reviewer standards before considering it done.
+- **Always run a senior code review agent** on changes before committing. Use the `senior-code-reviewer` subagent type to validate security, quality, and correctness. Do not commit unreviewed code.
 
 ## Visual Style Guide
 
@@ -99,8 +100,10 @@ Every agent is a `.md` file with YAML frontmatter + system prompt body:
 ---
 name: agent-slug
 display_name: "Human Name"
+description: "What this agent does and when it should be activated"
 role: ceo|cto|cpo|coo|senior-dev|junior-dev|code-reviewer|designer|design-reviewer|devops|qa|custom
 color: "#hex"
+icon_props: []
 reports_to: parent-slug | null
 direct_reports: ["child-slug"]
 authority_level: 1-5

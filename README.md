@@ -78,7 +78,7 @@ Authority determines what an agent can decide alone vs. must escalate. Level 5 m
 ### Install & Run
 
 ```bash
-git clone https://github.com/your-org/hivemind.git
+git clone https://github.com/swisside999/hivemind.git
 cd hivemind
 pnpm install
 
@@ -127,8 +127,10 @@ Each agent is a markdown file with YAML frontmatter. Edit them directly or use t
 ---
 name: my-agent
 display_name: "My Agent"
+description: "What this agent does and when it should be activated"
 role: custom
 color: "#FF6B35"
+icon_props: []
 reports_to: cto
 direct_reports: []
 authority_level: 3
@@ -213,9 +215,9 @@ See [progress.md](progress.md) for the full tracker.
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Ways to contribute:
-- **New agent roles** — Create specialized agents ([template](../../issues/new?template=agent_definition.md))
-- **Bug fixes** — [Report a bug](../../issues/new?template=bug_report.md)
-- **Features** — [Request a feature](../../issues/new?template=feature_request.md)
+- **New agent roles** — Create specialized agents ([template](https://github.com/swisside999/hivemind/issues/new?template=agent_definition.md))
+- **Bug fixes** — [Report a bug](https://github.com/swisside999/hivemind/issues/new?template=bug_report.md)
+- **Features** — [Request a feature](https://github.com/swisside999/hivemind/issues/new?template=feature_request.md)
 - **Documentation** — Improve guides and examples
 
 ## License
