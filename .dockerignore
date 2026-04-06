@@ -4,8 +4,16 @@ projects
 .git
 .github
 .claude
-*.md
-!package.json
-!pnpm-workspace.yaml
-!pnpm-lock.yaml
-!tsconfig.json
+.env
+.env.local
+.DS_Store
+*.log
+
+# Exclude docs but keep agent templates (they're .md files the server needs)
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+CLAUDE.md
+hivemind-prompt.md
+progress.md
+docs/

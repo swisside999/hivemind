@@ -156,7 +156,7 @@ Agent files live in `projects/<name>/.hivemind/agents/<agent-name>/agent.md`. Te
 
 ### WebSocket Events
 
-Connect to `ws://localhost:3100` for real-time updates:
+Connect to `ws://localhost:3101` for real-time updates:
 
 | Event | Direction | Description |
 |-------|-----------|-------------|

@@ -7,9 +7,10 @@ import { CompanyFeed } from "./CompanyFeed.js";
 
 interface Props {
   sendMessage: (agent: string, message: string) => void;
+  resolveEscalation: (id: string, resolution: string) => void;
 }
 
-export function ChatPanel({ sendMessage }: Props) {
+export function ChatPanel({ sendMessage, resolveEscalation }: Props) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -53,8 +54,6 @@ export function ChatPanel({ sendMessage }: Props) {
       handleSend();
     }
   };
-
-  const resolveEscalation = (_id: string, _resolution: string) => {};
 
   return (
     <aside className="flex w-96 flex-col border-l border-gray-800 bg-gray-900">

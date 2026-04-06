@@ -3,9 +3,12 @@ services:
     build: .
     ports:
       - "3100:3100"
+      - "3101:3101"
     volumes:
       - ./projects:/app/projects
     environment:
       - HIVEMIND_PORT=3100
+      - HIVEMIND_WS_PORT=3101
+      - HIVEMIND_PROJECTS_DIR=/app/projects
       - HIVEMIND_LOG_LEVEL=info
     restart: unless-stopped

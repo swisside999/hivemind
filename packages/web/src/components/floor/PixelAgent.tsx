@@ -441,41 +441,6 @@ export function PixelAgent({
 
   return (
     <>
-      {/* Inject keyframe styles once (idempotent via id check) */}
-      <style>{`
-        @keyframes hivemind-bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        @keyframes hivemind-tipsy {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(2deg); }
-          75% { transform: rotate(-2deg); }
-        }
-        @keyframes hivemind-drunk {
-          0%, 100% { transform: rotate(0deg) translateX(0); }
-          25% { transform: rotate(4deg) translateX(2px); }
-          75% { transform: rotate(-4deg) translateX(-2px); }
-        }
-        @keyframes hivemind-sparkle {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        .hivemind-pixel-bounce {
-          animation: hivemind-bounce 0.8s ease-in-out infinite;
-        }
-        .hivemind-pixel-tipsy {
-          animation: hivemind-tipsy 1.2s ease-in-out infinite;
-          transform-origin: center bottom;
-        }
-        .hivemind-pixel-drunk {
-          animation: hivemind-drunk 0.7s ease-in-out infinite;
-          transform-origin: center bottom;
-        }
-        .hivemind-pixel-sparkle rect {
-          animation: hivemind-sparkle 0.6s ease-in-out infinite alternate;
-        }
-      `}</style>
       <svg
         width={w}
         height={h}

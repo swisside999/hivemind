@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 interface Props {
   agentName: string;
@@ -9,7 +10,7 @@ interface Props {
 export function StreamingMessage({ agentName, text }: Props) {
   const html = useMemo(() => {
     if (!text) return "";
-    return marked.parse(text, { async: false }) as string;
+    return DOMPurify.sanitize(marked.parse(text, { async: false, breaks: true, gfm: true }) as string);
   }, [text]);
 
   return (

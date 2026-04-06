@@ -12,7 +12,13 @@ interface WsMessage {
 }
 
 export function createWebSocketServer(server: Server, orchestrator: Orchestrator, ticketManager?: TicketManager | null): WebSocketServer {
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({
+    server,
+    verifyClient: ({ origin }: { origin?: string }) => {
+      if (!origin) return true; // Allow non-browser clients
+      return origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
+    },
+  });
 
   function broadcast(type: string, payload: unknown): void {
     const message = JSON.stringify({ type, payload });

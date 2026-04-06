@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { useAppStore } from "../../stores/appStore.js";
 
 export function WikiPanel() {
@@ -22,7 +23,7 @@ export function WikiPanel() {
 
   const html = useMemo(() => {
     if (!sharedMemory) return "";
-    return marked.parse(sharedMemory, { async: false }) as string;
+    return DOMPurify.sanitize(marked.parse(sharedMemory, { async: false, breaks: true, gfm: true }) as string);
   }, [sharedMemory]);
 
   const handleSave = async () => {

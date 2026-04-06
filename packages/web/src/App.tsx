@@ -41,7 +41,7 @@ export function App() {
             {activeView === "wiki" && <WikiPanel />}
           </main>
 
-          <ChatPanel sendMessage={sendMessage} />
+          <ChatPanel sendMessage={sendMessage} resolveEscalation={resolveEscalation} />
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { useAppStore } from "../../stores/appStore.js";
 import type { AgentMessage, MessageType } from "../../types/index.js";
 
@@ -49,7 +50,7 @@ function FeedEntry({ message, agentColor }: FeedEntryProps) {
 
   const expandedHtml = useMemo(() => {
     if (!expanded) return "";
-    return marked.parse(message.body, { async: false }) as string;
+    return DOMPurify.sanitize(marked.parse(message.body, { async: false, breaks: true, gfm: true }) as string);
   }, [expanded, message.body]);
 
   return (

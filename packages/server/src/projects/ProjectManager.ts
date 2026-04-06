@@ -104,6 +104,9 @@ export class ProjectManager {
   }
 
   async load(name: string): Promise<ProjectConfig> {
+    if (!/^[a-z0-9-]+$/.test(name)) {
+      throw new Error(`Invalid project name: ${name}`);
+    }
     const configPath = resolve(this.projectsDir, name, HIVEMIND_DIR, CONFIG_FILE);
     if (!existsSync(configPath)) {
       throw new Error(`Project not found: ${name}`);
@@ -117,6 +120,9 @@ export class ProjectManager {
   }
 
   async delete(name: string): Promise<void> {
+    if (!/^[a-z0-9-]+$/.test(name)) {
+      throw new Error(`Invalid project name: ${name}`);
+    }
     const projectDir = resolve(this.projectsDir, name);
     if (!existsSync(projectDir)) {
       throw new Error(`Project not found: ${name}`);

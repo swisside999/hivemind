@@ -9,6 +9,7 @@ const WS_URL = import.meta.env.DEV
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const reconnectDelay = useRef(3000);
 
   const {
     setConnected,
@@ -18,7 +19,6 @@ export function useWebSocket() {
     removeEscalation,
     addConnection,
     addChatMessage,
-    chatTarget,
     setIsThinking,
     setTickets,
     addTicket,
@@ -39,6 +39,7 @@ export function useWebSocket() {
 
     ws.onopen = () => {
       setConnected(true);
+      reconnectDelay.current = 3000;
     };
 
     ws.onmessage = (event) => {
@@ -52,7 +53,8 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, 3000);
+      reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
+      reconnectDelay.current = Math.min(reconnectDelay.current * 2, 60000);
     };
 
     ws.onerror = () => {

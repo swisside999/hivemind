@@ -6,6 +6,14 @@ import type { AgentMemory, MemoryUpdate } from "./types.js";
 
 const SCOPE = "MemoryManager";
 
+function safePath(base: string, ...segments: string[]): string {
+  const resolved = resolve(base, ...segments);
+  if (!resolved.startsWith(base)) {
+    throw new Error(`Path traversal detected: ${segments.join("/")}`);
+  }
+  return resolved;
+}
+
 const FILE_MAP: Record<MemoryUpdate["field"], string> = {
   memory: "memory.md",
   currentTask: "current-task.md",
@@ -16,13 +24,15 @@ const MAX_MEMORY_LINES = 200;
 
 export class MemoryManager {
   private agentBaseDir: string;
+  private hivemindDir: string;
 
   constructor(agentBaseDir: string) {
     this.agentBaseDir = agentBaseDir;
+    this.hivemindDir = resolve(agentBaseDir, "..");
   }
 
   async read(agentName: string): Promise<AgentMemory> {
-    const agentDir = resolve(this.agentBaseDir, agentName);
+    const agentDir = safePath(this.agentBaseDir, agentName);
 
     const [memory, currentTask, decisions] = await Promise.all([
       this.readFile(resolve(agentDir, "memory.md")),
@@ -35,7 +45,7 @@ export class MemoryManager {
 
   async update(update: MemoryUpdate): Promise<void> {
     const fileName = FILE_MAP[update.field];
-    const filePath = resolve(this.agentBaseDir, update.agentName, fileName);
+    const filePath = safePath(this.agentBaseDir, update.agentName, fileName);
 
     if (update.append) {
       const entry = `\n${update.content}`;
@@ -52,13 +62,13 @@ export class MemoryManager {
   }
 
   async clearCurrentTask(agentName: string): Promise<void> {
-    const filePath = resolve(this.agentBaseDir, agentName, "current-task.md");
+    const filePath = safePath(this.agentBaseDir, agentName, "current-task.md");
     await writeFile(filePath, "");
     logger.debug(SCOPE, `Cleared current task for ${agentName}`);
   }
 
   async appendDecision(agentName: string, decision: string): Promise<void> {
-    const filePath = resolve(this.agentBaseDir, agentName, "decisions.md");
+    const filePath = safePath(this.agentBaseDir, agentName, "decisions.md");
     const timestamp = new Date().toISOString();
     const entry = `\n## ${timestamp}\n${decision}\n`;
     await appendFile(filePath, entry);
@@ -80,19 +90,19 @@ export class MemoryManager {
   }
 
   async readSharedMemory(): Promise<string> {
-    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    const filePath = safePath(this.hivemindDir, "shared-memory.md");
     if (!existsSync(filePath)) return "";
     return readFile(filePath, "utf-8");
   }
 
   async writeSharedMemory(content: string): Promise<void> {
-    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    const filePath = safePath(this.hivemindDir, "shared-memory.md");
     await writeFile(filePath, content);
     logger.debug(SCOPE, "Updated shared memory");
   }
 
   async appendSharedMemory(entry: string, author: string): Promise<void> {
-    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    const filePath = safePath(this.hivemindDir, "shared-memory.md");
     const timestamp = new Date().toISOString();
     const formattedEntry = `\n## ${timestamp} — ${author}\n${entry}\n`;
     if (!existsSync(filePath)) {

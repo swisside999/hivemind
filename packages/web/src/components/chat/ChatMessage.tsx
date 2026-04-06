@@ -1,12 +1,7 @@
 import { useMemo } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import type { ChatMessage as ChatMessageType } from "../../types/index.js";
-
-// Configure marked for safe, clean output
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
 
 interface Props {
   message: ChatMessageType;
@@ -15,7 +10,7 @@ interface Props {
 export function ChatMessage({ message }: Props) {
   const html = useMemo(() => {
     if (message.role === "user") return "";
-    return marked.parse(message.content, { async: false }) as string;
+    return DOMPurify.sanitize(marked.parse(message.content, { async: false, breaks: true, gfm: true }) as string);
   }, [message.content, message.role]);
 
   if (message.role === "system") {

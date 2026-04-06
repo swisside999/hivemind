@@ -18,6 +18,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
   private storePath: string;
   private store: TicketStore = { nextNumber: 1, tickets: [] };
   private index = new Map<string, Ticket>();
+  private persistQueue: Promise<void> = Promise.resolve();
 
   constructor(hivemindDir: string) {
     super();
@@ -112,7 +113,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
     this.index.set(ticket.id, ticket);
 
     logger.info(SCOPE, `Created ticket #${ticket.number}: ${ticket.title}`);
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:created", ticket);
     return ticket;
   }
@@ -137,7 +138,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
       toStatus: newStatus,
     });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { status: newStatus } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
@@ -160,7 +161,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
       toAgent: agentName,
     });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { assignedTo: agentName, status: "assigned" } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
@@ -185,7 +186,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
       toStatus: newStatus,
     });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { reviewedBy: reviewer, status: newStatus } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
@@ -215,7 +216,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
       reason,
     });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { testedBy: tester, status: newStatus } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
@@ -231,7 +232,7 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
     ticket.updatedAt = new Date().toISOString();
     const event = this.addEvent(ticket, "comment", actor, { comment });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { updatedAt: ticket.updatedAt } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
@@ -261,10 +262,16 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
       comment: `Priority changed to ${priority}`,
     });
 
-    this.persist().catch((err) => logger.error(SCOPE, "Failed to persist", err));
+    this.queuePersist();
     this.emit("ticket:updated", { ticketId, changes: { priority } });
     this.emit("ticket:event", { ticketId, event });
     return ticket;
+  }
+
+  private queuePersist(): void {
+    this.persistQueue = this.persistQueue
+      .then(() => this.persist())
+      .catch((err) => logger.error(SCOPE, "Failed to persist tickets", err));
   }
 
   private addEvent(ticket: Ticket, type: TicketEvent["type"], actor: string, data: TicketEventData): TicketEvent {

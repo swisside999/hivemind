@@ -32,9 +32,19 @@ COPY --from=base /app/packages/server/dist packages/server/dist/
 COPY --from=base /app/packages/server/templates packages/server/templates/
 COPY --from=base /app/packages/web/dist packages/web/dist/
 
+RUN addgroup --system --gid 1001 hivemind && \
+    adduser --system --uid 1001 --ingroup hivemind hivemind
+
+RUN mkdir -p /app/projects && chown hivemind:hivemind /app/projects
+
+USER hivemind
+
 ENV HIVEMIND_PORT=3100
 ENV HIVEMIND_LOG_LEVEL=info
 
 EXPOSE 3100
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:3100/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 
 CMD ["node", "packages/server/dist/index.js"]

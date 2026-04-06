@@ -31,6 +31,9 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   ticketManager: TicketManager | null = null;
   sharedMemoryContent: string = "";
   private usageStats = new Map<string, { invocations: number; lastInvoked: string }>();
+  private boundAgents = new Set<string>();
+  private commitLock: Promise<void> = Promise.resolve();
+  private ticketManagerConnected = false;
 
   constructor(workingDirectory: string) {
     super();
@@ -144,9 +147,12 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
   connectTicketManager(ticketManager: TicketManager): void {
     this.ticketManager = ticketManager;
-    this.on("messageRouted", (message) => {
-      this.handleTicketFromMessage(message);
-    });
+    if (!this.ticketManagerConnected) {
+      this.ticketManagerConnected = true;
+      this.on("messageRouted", (message) => {
+        this.handleTicketFromMessage(message);
+      });
+    }
     logger.info(SCOPE, "TicketManager connected");
   }
 
@@ -162,6 +168,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     logger.info(SCOPE, "Shutting down orchestrator");
     this.agentManager.stopAll();
     this.messageBus.clear();
+    this.boundAgents.clear();
   }
 
   private trackUsage(agentName: string): void {
@@ -276,6 +283,9 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   }
 
   private bindAgentEvents(name: string, agent: AgentProcess): void {
+    if (this.boundAgents.has(name)) return;
+    this.boundAgents.add(name);
+
     agent.on("thought", (thought: string) => {
       this.emit("agentThought", name, thought);
     });
@@ -326,16 +336,22 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   }
 
   private async handleAgentCommit(agentName: string, subject: string, ticketId?: string): Promise<void> {
-    if (!isGitRepo(this.workingDirectory)) return;
-    const changed = getStatus(this.workingDirectory);
-    if (changed.length === 0) return;
-    const result = stageAndCommit(this.workingDirectory, subject, agentName);
-    if (!result) return;
-    const commitData = { ...result, message: subject, ticketId };
-    this.emit("agentCommit", agentName, commitData);
-    if (ticketId && this.ticketManager) {
-      await this.ticketManager.addCommit(ticketId, agentName, result.sha, result.files, subject);
-    }
+    const doCommit = async (): Promise<void> => {
+      if (!isGitRepo(this.workingDirectory)) return;
+      const changed = getStatus(this.workingDirectory);
+      if (changed.length === 0) return;
+      const result = stageAndCommit(this.workingDirectory, subject, agentName);
+      if (!result) return;
+      const commitData = { ...result, message: subject, ticketId };
+      this.emit("agentCommit", agentName, commitData);
+      if (ticketId && this.ticketManager) {
+        await this.ticketManager.addCommit(ticketId, agentName, result.sha, result.files, subject);
+      }
+    };
+    this.commitLock = this.commitLock.then(doCommit).catch((err) => {
+      logger.error(SCOPE, `Commit failed for ${agentName}`, err);
+    });
+    await this.commitLock;
   }
 
   private stripHivemindMessages(output: string): string {

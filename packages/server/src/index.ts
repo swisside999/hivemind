@@ -55,8 +55,12 @@ async function main(): Promise<void> {
   const app = express();
   app.use(express.json());
 
-  app.use((_, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
+  const allowedOrigins = [`http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:${config.port}`];
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+    }
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     next();
@@ -71,9 +75,9 @@ async function main(): Promise<void> {
   const server = createServer(app);
   createWebSocketServer(server, orchestrator, ticketManager);
 
-  server.listen(config.port, () => {
-    logger.info(SCOPE, `Hivemind server running on http://localhost:${config.port}`);
-    logger.info(SCOPE, `WebSocket available on ws://localhost:${config.port}`);
+  server.listen(config.port, "127.0.0.1", () => {
+    logger.info(SCOPE, `Hivemind server running on http://127.0.0.1:${config.port}`);
+    logger.info(SCOPE, `WebSocket available on ws://127.0.0.1:${config.port}`);
   });
 
   const shutdown = (): void => {

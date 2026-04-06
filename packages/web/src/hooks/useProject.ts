@@ -2,7 +2,10 @@ import { useCallback } from "react";
 import { useAppStore } from "../stores/appStore.js";
 
 export function useProject() {
-  const { projects, activeProject, setProjects, setActiveProject } = useAppStore();
+  const projects = useAppStore((s) => s.projects);
+  const activeProject = useAppStore((s) => s.activeProject);
+  const setProjects = useAppStore((s) => s.setProjects);
+  const setActiveProject = useAppStore((s) => s.setActiveProject);
 
   const fetchProjects = useCallback(async () => {
     try {

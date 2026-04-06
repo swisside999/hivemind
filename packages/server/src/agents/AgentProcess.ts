@@ -263,6 +263,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       const jsonStr = this.fullText.slice(startIdx + HIVEMIND_MSG_START.length, endIdx);
       try {
         const parsed = JSON.parse(jsonStr) as AgentMessage;
+        parsed.from = this.config.name;
         this.emit("message", parsed);
       } catch (err) {
         logger.error(SCOPE, `Failed to parse agent message from ${this.config.name}: ${jsonStr}`, err);

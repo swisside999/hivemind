@@ -61,6 +61,10 @@ export class AgentManager {
   }
 
   removeAgent(name: string): void {
+    const agent = this.agents.get(name);
+    if (agent) {
+      agent.stop();
+    }
     this.agents.delete(name);
   }
 

@@ -32,7 +32,11 @@ export function ProjectList() {
             </span>
           </button>
           <button
-            onClick={() => deleteProject(project.name)}
+            onClick={() => {
+              if (window.confirm(`Delete project "${project.name}"? This cannot be undone.`)) {
+                deleteProject(project.name);
+              }
+            }}
             className="hidden text-xs text-red-400 hover:text-red-300 group-hover:block"
           >
             Delete

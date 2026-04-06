@@ -4,6 +4,7 @@ import { logger } from "../utils/logger.js";
 import type { AgentMessage, MessageType, MessagePriority } from "./types.js";
 
 const SCOPE = "MessageBus";
+const MAX_LOG_SIZE = 1000;
 
 export interface MessageBusEvents {
   message: [AgentMessage];
@@ -43,6 +44,9 @@ export class MessageBus extends EventEmitter<MessageBusEvents> {
     };
 
     this.messageLog.push(message);
+    if (this.messageLog.length > MAX_LOG_SIZE) {
+      this.messageLog.splice(0, this.messageLog.length - MAX_LOG_SIZE);
+    }
     logger.debug(SCOPE, `[${message.from} → ${message.to}] ${message.type}: ${message.subject}`);
 
     this.emit("message", message);
@@ -67,6 +71,9 @@ export class MessageBus extends EventEmitter<MessageBusEvents> {
     }
 
     this.messageLog.push(message);
+    if (this.messageLog.length > MAX_LOG_SIZE) {
+      this.messageLog.splice(0, this.messageLog.length - MAX_LOG_SIZE);
+    }
     logger.debug(SCOPE, `Routing existing: [${message.from} → ${message.to}] ${message.type}: ${message.subject}`);
 
     this.emit("message", message);
@@ -90,7 +97,10 @@ export class MessageBus extends EventEmitter<MessageBusEvents> {
     );
   }
 
-  getThread(messageId: string): AgentMessage[] {
+  getThread(messageId: string, visited = new Set<string>()): AgentMessage[] {
+    if (visited.has(messageId)) return [];
+    visited.add(messageId);
+
     const thread: AgentMessage[] = [];
     const rootMessage = this.messageLog.find((m) => m.id === messageId);
     if (!rootMessage) return thread;
@@ -100,7 +110,7 @@ export class MessageBus extends EventEmitter<MessageBusEvents> {
     const replies = this.messageLog.filter((m) => m.parentMessageId === messageId);
     for (const reply of replies) {
       thread.push(reply);
-      thread.push(...this.getThread(reply.id));
+      thread.push(...this.getThread(reply.id, visited));
     }
 
     return thread;
