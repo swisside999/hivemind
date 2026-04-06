@@ -47,6 +47,7 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 
 ## Timeline
 - 2026-04-06: Full project built from scratch through Phase 5
+- 2026-04-06: Phase 7 open source infrastructure created
 
 ---
 
@@ -60,10 +61,14 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 
 ### Phase 7: Open Source Launch
 - [ ] Brand identity (logo, color system, tagline) — see brief in CLAUDE.md
-- [ ] CONTRIBUTING.md, issue templates, Code of Conduct
-- [ ] GitHub Actions CI/CD (lint, typecheck, build on PR)
-- [ ] Docker Compose for one-command dev setup
-- [ ] README rewrite with screenshots, demo GIF, architecture diagram
+- [x] CONTRIBUTING.md with PR workflow, code standards, project structure
+- [x] Issue templates (bug report, feature request, agent definition)
+- [x] Code of Conduct (Contributor Covenant)
+- [x] GitHub Actions CI/CD (typecheck + build on PR, Node 20 + 22 matrix)
+- [x] Docker Compose + Dockerfile + .dockerignore for one-command setup
+- [x] .env.example with documented config options
+- [x] README rewrite with compelling intro, architecture diagram, full API docs
+- [ ] Demo GIF/video showing the full workflow
 - [ ] npm package: `npx hivemind-ai init` quick start
 - [ ] Publish as a plugin/skill on buildwithclaude.com (497+ extension marketplace)
 - [ ] Landing page / docs site

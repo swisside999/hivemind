@@ -173,16 +173,16 @@ See `progress.md` for the full tracker. Next priorities:
 
 ## Open Source Preparation Checklist
 
-- [ ] CONTRIBUTING.md with PR workflow, code style, testing requirements
-- [ ] Issue templates (bug report, feature request, agent definition)
-- [ ] Code of Conduct (Contributor Covenant)
-- [ ] GitHub Actions: lint + typecheck + build on PR
-- [ ] Docker Compose for one-command dev setup
-- [ ] `.env.example` with documented config options
-- [ ] Architecture diagram in README
+- [x] CONTRIBUTING.md with PR workflow, code style, testing requirements
+- [x] Issue templates (bug report, feature request, agent definition)
+- [x] Code of Conduct (Contributor Covenant)
+- [x] GitHub Actions: typecheck + build on PR (Node 20 + 22 matrix)
+- [x] Docker Compose + Dockerfile for one-command dev setup
+- [x] `.env.example` with documented config options
+- [x] Architecture diagram in README
 - [ ] Demo GIF/video showing the full workflow
 - [ ] npm package with `npx hivemind-ai init` quick start
-- [ ] LICENSE already MIT
+- [x] LICENSE already MIT
 
 ## Brand Identity Brief
 

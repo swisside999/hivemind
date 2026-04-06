@@ -1,0 +1,11 @@
+services:
+  hivemind:
+    build: .
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./projects:/app/projects
+    environment:
+      - HIVEMIND_PORT=3100
+      - HIVEMIND_LOG_LEVEL=info
+    restart: unless-stopped

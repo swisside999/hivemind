@@ -1,0 +1,11 @@
+node_modules
+dist
+projects
+.git
+.github
+.claude
+*.md
+!package.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!tsconfig.json
