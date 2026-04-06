@@ -19,6 +19,7 @@ export function useWebSocket() {
     addConnection,
     addChatMessage,
     chatTarget,
+    setIsThinking,
     setTickets,
     addTicket,
     updateTicket,
@@ -91,6 +92,7 @@ export function useWebSocket() {
       }
       case "message:response": {
         const { agent, response } = payload as { agent: string; response: string };
+        setIsThinking(false);
         addChatMessage({
           id: crypto.randomUUID(),
           role: "agent",
@@ -111,6 +113,7 @@ export function useWebSocket() {
       }
       case "agent:error": {
         const { agent, error } = payload as { agent: string; error: string };
+        setIsThinking(false);
         updateAgentState(agent, { status: "error", currentThought: `Error: ${error}` });
         break;
       }

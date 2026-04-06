@@ -87,6 +87,10 @@ interface AppState {
   setShowNewProject: (show: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
 
+  // Chat thinking state
+  isThinking: boolean;
+  setIsThinking: (thinking: boolean) => void;
+
   // WebSocket
   connected: boolean;
   setConnected: (connected: boolean) => void;
@@ -107,11 +111,21 @@ interface AppState {
   setShowNewTicket: (show: boolean) => void;
 }
 
+const STORAGE_KEY_PROJECT = "hivemind:activeProject";
+const STORAGE_KEY_VIEW = "hivemind:activeView";
+
 export const useAppStore = create<AppState>((set) => ({
   projects: [],
-  activeProject: null,
+  activeProject: localStorage.getItem(STORAGE_KEY_PROJECT),
   setProjects: (projects) => set({ projects }),
-  setActiveProject: (name) => set({ activeProject: name }),
+  setActiveProject: (name) => {
+    if (name) {
+      localStorage.setItem(STORAGE_KEY_PROJECT, name);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_PROJECT);
+    }
+    set({ activeProject: name });
+  },
 
   agentConfigs: [],
   agentStates: new Map(),
@@ -213,15 +227,21 @@ export const useAppStore = create<AppState>((set) => ({
   setShowNewProject: (show) => set({ showNewProject: show }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
+  isThinking: false,
+  setIsThinking: (thinking) => set({ isThinking: thinking }),
+
   connected: false,
   setConnected: (connected) => set({ connected }),
 
-  activeView: "floor",
+  activeView: (localStorage.getItem(STORAGE_KEY_VIEW) as "floor" | "tickets") ?? "floor",
   tickets: [],
   selectedTicket: null,
   showTicketDetail: false,
   showNewTicket: false,
-  setActiveView: (view) => set({ activeView: view }),
+  setActiveView: (view) => {
+    localStorage.setItem(STORAGE_KEY_VIEW, view);
+    set({ activeView: view });
+  },
   setTickets: (tickets) => set({ tickets }),
   addTicket: (ticket) =>
     set((state) => ({ tickets: [...state.tickets, ticket] })),

@@ -15,13 +15,15 @@ export function ChatPanel({ sendMessage }: Props) {
   const chatHistories = useAppStore((s) => s.chatHistories);
   const addChatMessage = useAppStore((s) => s.addChatMessage);
   const agentConfigs = useAppStore((s) => s.agentConfigs);
+  const isThinking = useAppStore((s) => s.isThinking);
+  const setIsThinking = useAppStore((s) => s.setIsThinking);
 
   const chatMessages = chatHistories.get(chatTarget) ?? [];
   const targetConfig = agentConfigs.find((c) => c.name === chatTarget);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  }, [chatMessages, isThinking]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -34,6 +36,7 @@ export function ChatPanel({ sendMessage }: Props) {
       timestamp: new Date().toISOString(),
     });
 
+    setIsThinking(true);
     sendMessage(chatTarget, trimmed);
     setInput("");
   };
@@ -45,10 +48,7 @@ export function ChatPanel({ sendMessage }: Props) {
     }
   };
 
-  // Placeholder for resolveEscalation (comes from useWebSocket in App)
-  const resolveEscalation = (_id: string, _resolution: string) => {
-    // forwarded from parent via context in a real impl
-  };
+  const resolveEscalation = (_id: string, _resolution: string) => {};
 
   return (
     <aside className="flex w-96 flex-col border-l border-gray-800 bg-gray-900">
@@ -60,14 +60,21 @@ export function ChatPanel({ sendMessage }: Props) {
             style={{ backgroundColor: targetConfig.color }}
           />
         )}
-        <div>
+        <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold text-gray-100">
             {targetConfig?.displayName ?? chatTarget}
           </h2>
-          <p className="text-xs text-gray-500">
-            {targetConfig?.description?.slice(0, 60) ?? "Agent"}
+          <p className="text-xs text-gray-500 truncate">
+            {isThinking ? "Thinking..." : (targetConfig?.description?.slice(0, 60) ?? "Agent")}
           </p>
         </div>
+        {isThinking && (
+          <div className="flex items-center gap-0.5">
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+          </div>
+        )}
       </div>
 
       {/* Escalation banners */}
@@ -75,7 +82,7 @@ export function ChatPanel({ sendMessage }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-3">
-        {chatMessages.length === 0 && (
+        {chatMessages.length === 0 && !isThinking && (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm text-gray-600">
             Send a message to {targetConfig?.displayName ?? "the agent"} to get started.
             <br />
@@ -85,6 +92,22 @@ export function ChatPanel({ sendMessage }: Props) {
         {chatMessages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
+
+        {/* Thinking indicator */}
+        {isThinking && (
+          <div className="flex justify-start px-4 py-1.5">
+            <div className="rounded-2xl bg-gray-800 px-4 py-3">
+              <div className="mb-1 text-xs font-medium text-gray-400">
+                {targetConfig?.displayName ?? chatTarget}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -98,13 +121,14 @@ export function ChatPanel({ sendMessage }: Props) {
             placeholder={`Message ${targetConfig?.displayName ?? chatTarget}...`}
             className="flex-1 resize-none rounded-lg bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 outline-none focus:ring-1 focus:ring-indigo-500"
             rows={2}
+            disabled={isThinking}
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isThinking}
             className="self-end rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Send
+            {isThinking ? "..." : "Send"}
           </button>
         </div>
       </div>

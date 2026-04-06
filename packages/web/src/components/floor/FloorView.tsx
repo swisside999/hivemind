@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { useAgentNodes } from "../../hooks/useAgents.js";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useAgentNodes, type AgentNode as AgentNodeType } from "../../hooks/useAgents.js";
 import { useAppStore } from "../../stores/appStore.js";
 import { AgentNode } from "./AgentNode.js";
 import { ConnectionLine } from "./ConnectionLine.js";
@@ -28,6 +28,7 @@ export function FloorView() {
   const setShowAgentDetail = useAppStore((s) => s.setShowAgentDetail);
 
   const [ctxMenu, setCtxMenu] = useState<ContextMenuState | null>(null);
+  const floorRef = useRef<HTMLDivElement>(null);
 
   const nodeMap = new Map(nodes.map((n) => [n.config.name, n]));
 
@@ -40,31 +41,76 @@ export function FloorView() {
     }
   }
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, agentName: string) => {
-    setCtxMenu({ x: e.clientX, y: e.clientY, agentName });
+  // Convert screen coords to SVG viewBox coords
+  const screenToSvg = useCallback((clientX: number, clientY: number): { svgX: number; svgY: number } | null => {
+    const svgEl = document.getElementById("floor-svg") as SVGSVGElement | null;
+    if (!svgEl) return null;
+    const pt = svgEl.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svgEl.getScreenCTM();
+    if (!ctm) return null;
+    const svgPt = pt.matrixTransform(ctm.inverse());
+    return { svgX: svgPt.x, svgY: svgPt.y };
   }, []);
 
-  const spawnReaction = useCallback((agentName: string, emoji: string) => {
+  // Find which agent is near the given SVG coordinates
+  const hitTestAgent = useCallback((svgX: number, svgY: number): AgentNodeType | null => {
+    const HIT_RADIUS = 30;
+    for (const node of nodes) {
+      const dx = node.x - svgX;
+      const dy = node.y - svgY;
+      if (dx * dx + dy * dy < HIT_RADIUS * HIT_RADIUS) return node;
+    }
+    return null;
+  }, [nodes]);
+
+  // Native contextmenu listener — works in all browsers including Safari
+  useEffect(() => {
+    const el = floorRef.current;
+    if (!el) return;
+
+    const handler = (e: MouseEvent) => {
+      e.preventDefault();
+      const svgCoords = screenToSvg(e.clientX, e.clientY);
+      if (!svgCoords) return;
+      const hit = hitTestAgent(svgCoords.svgX, svgCoords.svgY);
+      if (hit) {
+        setCtxMenu({ x: e.clientX, y: e.clientY, agentName: hit.config.name });
+      }
+    };
+
+    el.addEventListener("contextmenu", handler);
+    return () => el.removeEventListener("contextmenu", handler);
+  }, [screenToSvg, hitTestAgent]);
+
+  const svgToScreen = useCallback((agentName: string): { x: number; y: number } | null => {
     const node = nodeMap.get(agentName);
-    if (!node) return;
-    const id = crypto.randomUUID();
-    // Convert SVG coords to approximate screen position
-    // The SVG viewBox is 1000x550, we approximate
-    const svgEl = document.querySelector("#floor-svg");
-    if (!svgEl) return;
-    const rect = svgEl.getBoundingClientRect();
-    const scaleX = rect.width / 1000;
-    const scaleY = rect.height / 550;
+    if (!node) return null;
+    const svgEl = document.getElementById("floor-svg") as SVGSVGElement | null;
+    if (!svgEl) return null;
+    const pt = svgEl.createSVGPoint();
+    pt.x = node.x;
+    pt.y = node.y;
+    const ctm = svgEl.getScreenCTM();
+    if (!ctm) return null;
+    const screenPt = pt.matrixTransform(ctm);
+    return { x: screenPt.x, y: screenPt.y - 20 };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes]);
+
+  const spawnReaction = useCallback((agentName: string, emoji: string) => {
+    const pos = svgToScreen(agentName);
+    if (!pos) return;
     addReaction({
-      id,
+      id: crypto.randomUUID(),
       agentName,
       emoji,
-      x: rect.left + node.x * scaleX,
-      y: rect.top + node.y * scaleY - 20,
+      x: pos.x,
+      y: pos.y,
       createdAt: Date.now(),
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, addReaction]);
+  }, [svgToScreen, addReaction]);
 
   const handleGiveBeer = useCallback(() => {
     if (!ctxMenu) return;
@@ -103,7 +149,11 @@ export function FloorView() {
   const ctxConfig = ctxMenu ? agentConfigs.find((c) => c.name === ctxMenu.agentName) : null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: "#0a0a1a" }}>
+    <div
+      ref={floorRef}
+      className="relative h-full w-full overflow-hidden"
+      style={{ background: "#0a0a1a" }}
+    >
       {/* Pixel grid background */}
       <div
         className="absolute inset-0 opacity-[0.04]"
@@ -203,11 +253,7 @@ export function FloorView() {
 
         {/* Agent nodes */}
         {nodes.map((node) => (
-          <AgentNode
-            key={node.config.name}
-            node={node}
-            onContextMenu={handleContextMenu}
-          />
+          <AgentNode key={node.config.name} node={node} />
         ))}
       </svg>
 

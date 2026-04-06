@@ -19,10 +19,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 interface Props {
   node: AgentNodeData;
-  onContextMenu: (e: React.MouseEvent, agentName: string) => void;
 }
 
-export function AgentNode({ node, onContextMenu }: Props) {
+export function AgentNode({ node }: Props) {
   const { config, state, x, y } = node;
   const setChatTarget = useAppStore((s) => s.setChatTarget);
   const setSelectedAgent = useAppStore((s) => s.setSelectedAgent);
@@ -42,18 +41,12 @@ export function AgentNode({ node, onContextMenu }: Props) {
     setShowAgentDetail(true);
   };
 
-  const handleRightClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onContextMenu(e, config.name);
-  };
-
   return (
     <g
       transform={`translate(${x}, ${y})`}
       className="cursor-pointer"
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      onContextMenu={handleRightClick}
     >
       {/* Platform / shadow */}
       <ellipse cx={0} cy={32} rx={22} ry={6} fill="#000" opacity={0.3} />
@@ -121,6 +114,7 @@ export function AgentNode({ node, onContextMenu }: Props) {
       {state.currentThought && isActive && (
         <ThoughtBubble text={state.currentThought} />
       )}
+
     </g>
   );
 }
