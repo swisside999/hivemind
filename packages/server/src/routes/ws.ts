@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import type { Orchestrator } from "../orchestrator/Orchestrator.js";
 import type { TicketManager } from "../tickets/TicketManager.js";
 import { logger } from "../utils/logger.js";
+import { getRuntimeSettings } from "./api.js";
 
 const SCOPE = "WebSocket";
 
@@ -43,6 +44,10 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
 
   orchestrator.on("agentCommit", (agentName, commitData) => {
     broadcast("agent:commit", { agent: agentName, ...commitData });
+  });
+
+  orchestrator.on("modelSelection", (info) => {
+    broadcast("agent:model", info);
   });
 
   orchestrator.on("messageRouted", (message) => {
@@ -89,6 +94,8 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
     }
 
     ws.send(JSON.stringify({ type: "usage:stats", payload: orchestrator.getUsageStats() }));
+
+    ws.send(JSON.stringify({ type: "settings:current", payload: getRuntimeSettings() }));
 
     ws.on("message", async (data) => {
       try {

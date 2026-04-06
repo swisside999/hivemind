@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { logger } from "../utils/logger.js";
-import type { AgentConfig, AgentStatus } from "./types.js";
+import type { AgentConfig, AgentModel, AgentStatus } from "./types.js";
 import type { AgentMessage } from "../orchestrator/types.js";
 
 const SCOPE = "AgentProcess";
@@ -25,12 +25,21 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   private fullText = "";
   private status: AgentStatus = "idle";
   private workingDirectory: string;
+  private modelOverride?: AgentModel;
   sharedMemory: string = "";
 
   constructor(config: AgentConfig, workingDirectory: string) {
     super();
     this.config = config;
     this.workingDirectory = workingDirectory;
+  }
+
+  setModelOverride(model: AgentModel): void {
+    this.modelOverride = model;
+  }
+
+  getActiveModel(): AgentModel {
+    return this.modelOverride ?? this.config.model;
   }
 
   getStatus(): AgentStatus {
@@ -47,7 +56,8 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       return;
     }
 
-    logger.info(SCOPE, `Starting agent ${this.config.name} with model ${this.config.model}`);
+    const activeModel = this.getActiveModel();
+    logger.info(SCOPE, `Starting agent ${this.config.name} with model ${activeModel}${this.modelOverride ? ` (override from ${this.config.model})` : ""}`);
 
     this.fullText = "";
     this.outputBuffer = "";
@@ -172,12 +182,13 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   }
 
   private resolveModelFlag(): string {
+    const model = this.modelOverride ?? this.config.model;
     const modelMap: Record<string, string> = {
       opus: "claude-opus-4-6",
       sonnet: "claude-sonnet-4-6",
       haiku: "claude-haiku-4-5-20251001",
     };
-    return modelMap[this.config.model] ?? "claude-sonnet-4-6";
+    return modelMap[model] ?? "claude-sonnet-4-6";
   }
 
   private bindProcessEvents(): void {

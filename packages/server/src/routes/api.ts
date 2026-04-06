@@ -7,6 +7,57 @@ import { logger } from "../utils/logger.js";
 
 const SCOPE = "API";
 
+// --- Runtime Settings ---
+
+export interface RuntimeSettings {
+  defaultModel: "sonnet" | "opus" | "haiku";
+  autoCommit: boolean;
+  logLevel: "debug" | "info" | "warn" | "error";
+  intelligentModelSelection: boolean;
+}
+
+const runtimeSettings: RuntimeSettings = {
+  defaultModel: "sonnet",
+  autoCommit: true,
+  logLevel: "info",
+  intelligentModelSelection: false,
+};
+
+const VALID_MODELS = new Set(["sonnet", "opus", "haiku"]);
+const VALID_LOG_LEVELS = new Set(["debug", "info", "warn", "error"]);
+
+export function getRuntimeSettings(): RuntimeSettings {
+  return { ...runtimeSettings };
+}
+
+export function updateRuntimeSettings(patch: Partial<RuntimeSettings>): RuntimeSettings {
+  if (patch.defaultModel !== undefined) {
+    if (!VALID_MODELS.has(patch.defaultModel)) {
+      throw new Error(`Invalid model: ${patch.defaultModel}`);
+    }
+    runtimeSettings.defaultModel = patch.defaultModel;
+  }
+  if (patch.autoCommit !== undefined) {
+    if (typeof patch.autoCommit !== "boolean") {
+      throw new Error("autoCommit must be a boolean");
+    }
+    runtimeSettings.autoCommit = patch.autoCommit;
+  }
+  if (patch.logLevel !== undefined) {
+    if (!VALID_LOG_LEVELS.has(patch.logLevel)) {
+      throw new Error(`Invalid log level: ${patch.logLevel}`);
+    }
+    runtimeSettings.logLevel = patch.logLevel;
+  }
+  if (patch.intelligentModelSelection !== undefined) {
+    if (typeof patch.intelligentModelSelection !== "boolean") {
+      throw new Error("intelligentModelSelection must be a boolean");
+    }
+    runtimeSettings.intelligentModelSelection = patch.intelligentModelSelection;
+  }
+  return { ...runtimeSettings };
+}
+
 function param(req: Request, name: string): string {
   const value = req.params[name];
   return Array.isArray(value) ? value[0] : value;
@@ -284,6 +335,45 @@ export function createApiRouter(deps: ApiDeps): Router {
 
   router.get("/usage", (_req: Request, res: Response) => {
     res.json({ usage: orchestrator.getUsageStats() });
+  });
+
+  // --- Settings ---
+
+  router.get("/settings", (_req: Request, res: Response) => {
+    res.json({ settings: getRuntimeSettings() });
+  });
+
+  router.patch("/settings", (req: Request, res: Response) => {
+    try {
+      const patch = req.body as Partial<RuntimeSettings>;
+      const updated = updateRuntimeSettings(patch);
+      res.json({ settings: updated });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid settings";
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // --- Export ---
+
+  router.get("/export/messages", (_req: Request, res: Response) => {
+    const log = orchestrator.messageBus.getLog();
+    const filename = `hivemind-messages-${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.json({ exportedAt: new Date().toISOString(), messages: log });
+  });
+
+  router.get("/export/tickets", (_req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const allTickets = ticketManager.getAll();
+    const filename = `hivemind-tickets-${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.json({ exportedAt: new Date().toISOString(), tickets: allTickets });
   });
 
   return router;

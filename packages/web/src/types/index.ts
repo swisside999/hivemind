@@ -34,6 +34,15 @@ export interface AgentState {
   currentTask: string | null;
   currentThought: string | null;
   lastActivity: string;
+  activeModel?: AgentModel;
+  taskComplexity?: "low" | "medium" | "high";
+}
+
+export interface ModelSelectionInfo {
+  agent: string;
+  complexity: "low" | "medium" | "high";
+  selectedModel: string;
+  defaultModel: string;
 }
 
 export interface AgentWithState extends AgentConfig {

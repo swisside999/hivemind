@@ -9,14 +9,25 @@ import type { AgentConfig, AgentState } from "../agents/types.js";
 import { TicketManager } from "../tickets/TicketManager.js";
 import type { Ticket } from "../tickets/types.js";
 import { isGitRepo, getStatus, stageAndCommit } from "../utils/git.js";
+import { analyzeTaskComplexity, complexityToModel } from "../utils/taskComplexity.js";
+import { getRuntimeSettings } from "../routes/api.js";
+import type { AgentModel } from "../agents/types.js";
 
 const SCOPE = "Orchestrator";
+
+export interface ModelSelectionInfo {
+  agent: string;
+  complexity: string;
+  selectedModel: string;
+  defaultModel: string;
+}
 
 export interface OrchestratorEvents {
   agentThought: [string, string];
   agentChunk: [string, string];
   agentStatusChange: [string, string];
   agentCommit: [string, { sha: string; files: string[]; message: string; ticketId?: string }];
+  modelSelection: [ModelSelectionInfo];
   messageRouted: [AgentMessage];
   escalation: [EscalationRequest];
   escalationResolved: [EscalationRequest];
@@ -61,6 +72,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     if (this.sharedMemoryContent) {
       agent.sharedMemory = this.sharedMemoryContent;
     }
+
+    const modelForTask = this.selectModelForTask(agentName, userMessage, config);
+    agent.setModelOverride(modelForTask);
+
     this.bindAgentEvents(agentName, agent);
     this.trackUsage(agentName);
 
@@ -104,6 +119,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     if (this.sharedMemoryContent) {
       agent.sharedMemory = this.sharedMemoryContent;
     }
+
+    const routeModel = this.selectModelForTask(message.to, message.body, targetConfig);
+    agent.setModelOverride(routeModel);
+
     this.trackUsage(message.to);
     this.bindAgentEvents(message.to, agent);
 
@@ -337,6 +356,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
   private async handleAgentCommit(agentName: string, subject: string, ticketId?: string): Promise<void> {
     const doCommit = async (): Promise<void> => {
+      const settings = getRuntimeSettings();
+      if (!settings.autoCommit) return;
       if (!isGitRepo(this.workingDirectory)) return;
       const changed = getStatus(this.workingDirectory);
       if (changed.length === 0) return;
@@ -352,6 +373,31 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       logger.error(SCOPE, `Commit failed for ${agentName}`, err);
     });
     await this.commitLock;
+  }
+
+  private selectModelForTask(agentName: string, message: string, config: AgentConfig): AgentModel {
+    const settings = getRuntimeSettings();
+    const baseModel = settings.defaultModel ?? config.model;
+    if (!settings.intelligentModelSelection) {
+      return baseModel as AgentModel;
+    }
+
+    const complexity = analyzeTaskComplexity(message, {
+      role: config.role,
+      authorityLevel: config.authorityLevel,
+    });
+    const selectedModel = complexityToModel(complexity, baseModel) as AgentModel;
+
+    logger.info(SCOPE, `Model selection for ${agentName}: ${complexity} complexity -> ${selectedModel} (default: ${config.model})`);
+
+    this.emit("modelSelection", {
+      agent: agentName,
+      complexity,
+      selectedModel,
+      defaultModel: config.model,
+    });
+
+    return selectedModel;
   }
 
   private stripHivemindMessages(output: string): string {

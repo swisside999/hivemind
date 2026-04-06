@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAppStore } from "../stores/appStore.js";
-import type { AgentConfig, AgentState, AgentMessage, EscalationRequest, Ticket, TicketEvent } from "../types/index.js";
+import type { AgentConfig, AgentState, AgentMessage, AgentModel, EscalationRequest, ModelSelectionInfo, Ticket, TicketEvent } from "../types/index.js";
+import { sendNotification } from "../utils/notifications.js";
+import { playMessageReceived, playEscalation, playAgentActive, playTaskComplete, playTicketCreated, playError } from "../utils/sounds.js";
 
 const WS_URL = import.meta.env.DEV
   ? `ws://${window.location.hostname}:3100`
@@ -29,6 +31,7 @@ export function useWebSocket() {
     appendStreamingText,
     clearStreamingText,
     addFeedMessage,
+    setSettings,
   } = useAppStore();
 
   const connect = useCallback(() => {
@@ -87,6 +90,9 @@ export function useWebSocket() {
       case "agent:status": {
         const { agent, status } = payload as { agent: string; status: AgentState["status"] };
         updateAgentState(agent, { status, lastActivity: new Date().toISOString() });
+        if (status === "working") {
+          playAgentActive();
+        }
         break;
       }
       case "agent:chunk": {
@@ -94,10 +100,28 @@ export function useWebSocket() {
         appendStreamingText(agent, delta);
         break;
       }
+      case "agent:model": {
+        const info = payload as ModelSelectionInfo;
+        updateAgentState(info.agent, {
+          activeModel: info.selectedModel as AgentModel,
+          taskComplexity: info.complexity,
+        });
+        break;
+      }
       case "message:routed": {
         const msg = payload as AgentMessage;
         addConnection({ from: msg.from, to: msg.to, type: msg.type });
         addFeedMessage(msg);
+        if (msg.type === "task_complete") {
+          playTaskComplete();
+        }
+        if (msg.type === "escalation") {
+          sendNotification(`Agent needs attention: ${msg.from}`, {
+            body: msg.subject || "An agent requires your input",
+            tag: `routed-escalation-${msg.id}`,
+          });
+          playEscalation();
+        }
         setTimeout(() => {
           useAppStore.getState().removeConnection(msg.from, msg.to);
         }, 3000);
@@ -114,6 +138,7 @@ export function useWebSocket() {
           content: response,
           timestamp: new Date().toISOString(),
         });
+        playMessageReceived();
         break;
       }
       case "agent:commit": {
@@ -132,7 +157,13 @@ export function useWebSocket() {
         break;
       }
       case "escalation:new": {
-        addEscalation(payload as EscalationRequest);
+        const escalation = payload as EscalationRequest;
+        addEscalation(escalation);
+        playEscalation();
+        sendNotification(`Escalation: ${escalation.from}`, {
+          body: escalation.message?.subject || "An agent needs your input",
+          tag: `escalation-${escalation.id}`,
+        });
         break;
       }
       case "escalation:resolved": {
@@ -144,6 +175,11 @@ export function useWebSocket() {
         const { agent, error } = payload as { agent: string; error: string };
         setIsThinking(false);
         updateAgentState(agent, { status: "error", currentThought: `Error: ${error}` });
+        playError();
+        sendNotification(`Agent Error: ${agent}`, {
+          body: error,
+          tag: `agent-error-${agent}`,
+        });
         break;
       }
       case "tickets:all": {
@@ -152,6 +188,7 @@ export function useWebSocket() {
       }
       case "ticket:created": {
         addTicket(payload as Ticket);
+        playTicketCreated();
         break;
       }
       case "ticket:updated": {
@@ -166,6 +203,16 @@ export function useWebSocket() {
       }
       case "usage:stats": {
         setUsageStats(payload as Record<string, { invocations: number; lastInvoked: string }>);
+        break;
+      }
+      case "settings:current": {
+        const settings = payload as {
+          defaultModel: "sonnet" | "opus" | "haiku";
+          autoCommit: boolean;
+          logLevel: string;
+          intelligentModelSelection: boolean;
+        };
+        setSettings(settings);
         break;
       }
     }

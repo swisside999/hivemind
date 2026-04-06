@@ -107,12 +107,12 @@ interface AppState {
   setConnected: (connected: boolean) => void;
 
   // Tickets
-  activeView: "floor" | "tickets" | "wiki";
+  activeView: "floor" | "tickets" | "wiki" | "settings";
   tickets: Ticket[];
   selectedTicket: string | null;
   showTicketDetail: boolean;
   showNewTicket: boolean;
-  setActiveView: (view: "floor" | "tickets" | "wiki") => void;
+  setActiveView: (view: "floor" | "tickets" | "wiki" | "settings") => void;
 
   // Shared memory (company wiki)
   sharedMemory: string;
@@ -121,6 +121,17 @@ interface AppState {
   // Usage stats
   usageStats: Record<string, { invocations: number; lastInvoked: string }>;
   setUsageStats: (stats: Record<string, { invocations: number; lastInvoked: string }>) => void;
+
+  // Settings
+  settings: {
+    defaultModel: "sonnet" | "opus" | "haiku";
+    autoCommit: boolean;
+    logLevel: string;
+    intelligentModelSelection: boolean;
+  };
+  setSettings: (settings: AppState["settings"]) => void;
+  updateSetting: (key: string, value: unknown) => void;
+
   setTickets: (tickets: Ticket[]) => void;
   addTicket: (ticket: Ticket) => void;
   updateTicket: (ticketId: string, changes: Partial<Ticket>) => void;
@@ -274,7 +285,7 @@ export const useAppStore = create<AppState>((set) => ({
   connected: false,
   setConnected: (connected) => set({ connected }),
 
-  activeView: (localStorage.getItem(STORAGE_KEY_VIEW) as "floor" | "tickets" | "wiki") ?? "floor",
+  activeView: (localStorage.getItem(STORAGE_KEY_VIEW) as "floor" | "tickets" | "wiki" | "settings") ?? "floor",
   tickets: [],
   selectedTicket: null,
   showTicketDetail: false,
@@ -307,4 +318,16 @@ export const useAppStore = create<AppState>((set) => ({
 
   usageStats: {},
   setUsageStats: (stats) => set({ usageStats: stats }),
+
+  settings: {
+    defaultModel: "sonnet",
+    autoCommit: true,
+    logLevel: "info",
+    intelligentModelSelection: false,
+  },
+  setSettings: (settings) => set({ settings }),
+  updateSetting: (key, value) =>
+    set((state) => ({
+      settings: { ...state.settings, [key]: value },
+    })),
 }));

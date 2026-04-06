@@ -12,6 +12,7 @@ import { TicketBoard } from "./components/tickets/TicketBoard.js";
 import { TicketDetail } from "./components/tickets/TicketDetail.js";
 import { NewTicketModal } from "./components/tickets/NewTicketModal.js";
 import { WikiPanel } from "./components/wiki/WikiPanel.js";
+import { SettingsPanel } from "./components/settings/SettingsPanel.js";
 
 export function App() {
   const { sendMessage, resolveEscalation } = useWebSocket();
@@ -39,6 +40,7 @@ export function App() {
             {activeView === "floor" && <FloorView />}
             {activeView === "tickets" && <TicketBoard />}
             {activeView === "wiki" && <WikiPanel />}
+            {activeView === "settings" && <SettingsPanel />}
           </main>
 
           <ChatPanel sendMessage={sendMessage} resolveEscalation={resolveEscalation} />

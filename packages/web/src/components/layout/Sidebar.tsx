@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { useAppStore } from "../../stores/appStore.js";
 import { useProject } from "../../hooks/useProject.js";
+import { requestNotificationPermission } from "../../utils/notifications.js";
+import { setSoundEnabled, isSoundEnabled } from "../../utils/sounds.js";
 
 export function Sidebar() {
   const { projects, activeProject, selectProject, deleteProject } = useProject();
@@ -10,6 +13,12 @@ export function Sidebar() {
   const usageStats = useAppStore((s) => s.usageStats);
 
   const activeCount = Array.from(agentStates.values()).filter((s) => s.status === "working").length;
+
+  const hasNotificationSupport = "Notification" in window;
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    hasNotificationSupport && Notification.permission === "granted"
+  );
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
 
   return (
     <aside className="flex w-56 flex-col border-r border-gray-800 bg-gray-900">
@@ -82,6 +91,35 @@ export function Sidebar() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Notification & Sound toggles */}
+      <div className="border-t border-gray-800 p-2 space-y-1">
+        {hasNotificationSupport && (
+          <button
+            onClick={async () => {
+              const perm = await requestNotificationPermission();
+              setNotificationsEnabled(perm === "granted");
+            }}
+            className="flex w-full items-center gap-2 rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:bg-gray-700"
+            style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}
+          >
+            <span>{notificationsEnabled ? "\u{1F514}" : "\u{1F515}"}</span>
+            <span>{notificationsEnabled ? "Notifications On" : "Enable Notifications"}</span>
+          </button>
+        )}
+        <button
+          onClick={() => {
+            const next = !soundOn;
+            setSoundOn(next);
+            setSoundEnabled(next);
+          }}
+          className="flex w-full items-center gap-2 rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:bg-gray-700"
+          style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}
+        >
+          <span>{soundOn ? "\u{1F50A}" : "\u{1F507}"}</span>
+          <span>{soundOn ? "Sound On" : "Sound Off"}</span>
+        </button>
       </div>
     </aside>
   );
