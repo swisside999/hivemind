@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "node:http";
 import type { Orchestrator } from "../orchestrator/Orchestrator.js";
+import type { TicketManager } from "../tickets/TicketManager.js";
 import { logger } from "../utils/logger.js";
 
 const SCOPE = "WebSocket";
@@ -10,7 +11,7 @@ interface WsMessage {
   payload: unknown;
 }
 
-export function createWebSocketServer(server: Server, orchestrator: Orchestrator): WebSocketServer {
+export function createWebSocketServer(server: Server, orchestrator: Orchestrator, ticketManager?: TicketManager | null): WebSocketServer {
   const wss = new WebSocketServer({ server });
 
   function broadcast(type: string, payload: unknown): void {
@@ -46,6 +47,20 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
     broadcast("agent:error", { agent: agentName, error: error.message });
   });
 
+  if (ticketManager) {
+    ticketManager.on("ticket:created", (ticket) => {
+      broadcast("ticket:created", ticket);
+    });
+
+    ticketManager.on("ticket:updated", (data) => {
+      broadcast("ticket:updated", data);
+    });
+
+    ticketManager.on("ticket:event", (data) => {
+      broadcast("ticket:event", data);
+    });
+  }
+
   wss.on("connection", (ws) => {
     logger.info(SCOPE, "Client connected");
 
@@ -54,6 +69,10 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
 
     const configs = orchestrator.agentManager.getAllConfigs();
     ws.send(JSON.stringify({ type: "agents:configs", payload: configs }));
+
+    if (ticketManager) {
+      ws.send(JSON.stringify({ type: "tickets:all", payload: ticketManager.getAll() }));
+    }
 
     ws.on("message", async (data) => {
       try {

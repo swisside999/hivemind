@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { resolve } from "node:path";
 import express from "express";
 import { config } from "./config.js";
 import { logger } from "./utils/logger.js";
@@ -6,6 +7,7 @@ import { validateClaudeCli } from "./utils/claudeCli.js";
 import { Orchestrator } from "./orchestrator/Orchestrator.js";
 import { ProjectManager } from "./projects/ProjectManager.js";
 import { MemoryManager } from "./memory/MemoryManager.js";
+import { TicketManager } from "./tickets/TicketManager.js";
 import { createApiRouter } from "./routes/api.js";
 import { createWebSocketServer } from "./routes/ws.js";
 
@@ -23,12 +25,15 @@ async function main(): Promise<void> {
   const projects = await projectManager.list();
   let activeProjectDir: string | null = null;
   let memoryManager: MemoryManager | null = null;
+  let ticketManager: TicketManager | null = null;
 
   if (projects.length > 0) {
     const projectConfig = await projectManager.load(projects[0].name);
     activeProjectDir = projectConfig.workingDirectory;
     const agentDir = projectManager.getAgentDir(projects[0].name);
     memoryManager = new MemoryManager(agentDir);
+    ticketManager = new TicketManager(resolve(projectManager.getProjectDir(projects[0].name), ".hivemind"));
+    await ticketManager.load();
     logger.info(SCOPE, `Loaded project: ${projects[0].name}`);
   }
 
@@ -38,6 +43,9 @@ async function main(): Promise<void> {
   if (activeProjectDir) {
     const agentDir = projectManager.getAgentDir(projectManager.getActiveProject()!);
     await orchestrator.initialize(agentDir);
+    if (ticketManager) {
+      orchestrator.connectTicketManager(ticketManager);
+    }
   }
 
   const app = express();
@@ -50,14 +58,14 @@ async function main(): Promise<void> {
     next();
   });
 
-  app.use("/api", createApiRouter({ orchestrator, projectManager, memoryManager }));
+  app.use("/api", createApiRouter({ orchestrator, projectManager, memoryManager, ticketManager }));
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", version: "0.1.0" });
   });
 
   const server = createServer(app);
-  createWebSocketServer(server, orchestrator);
+  createWebSocketServer(server, orchestrator, ticketManager);
 
   server.listen(config.port, () => {
     logger.info(SCOPE, `Hivemind server running on http://localhost:${config.port}`);

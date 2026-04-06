@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import type { Orchestrator } from "../orchestrator/Orchestrator.js";
 import type { ProjectManager } from "../projects/ProjectManager.js";
 import type { MemoryManager } from "../memory/MemoryManager.js";
+import type { TicketManager } from "../tickets/TicketManager.js";
 import { logger } from "../utils/logger.js";
 
 const SCOPE = "API";
@@ -15,11 +16,12 @@ interface ApiDeps {
   orchestrator: Orchestrator;
   projectManager: ProjectManager;
   memoryManager: MemoryManager | null;
+  ticketManager: TicketManager | null;
 }
 
 export function createApiRouter(deps: ApiDeps): Router {
   const router = Router();
-  const { orchestrator, projectManager } = deps;
+  const { orchestrator, projectManager, ticketManager } = deps;
 
   // --- Projects ---
 
@@ -138,6 +140,116 @@ export function createApiRouter(deps: ApiDeps): Router {
 
   router.get("/state", (_req: Request, res: Response) => {
     res.json(orchestrator.getState());
+  });
+
+  // --- Tickets ---
+
+  router.get("/tickets", (req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const { status, assignedTo } = req.query as { status?: string; assignedTo?: string };
+    const tickets = ticketManager.getFiltered(
+      status as Parameters<typeof ticketManager.getFiltered>[0],
+      assignedTo
+    );
+    res.json({ tickets });
+  });
+
+  router.post("/tickets", (req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const { title, description, priority, assignedTo } = req.body as {
+      title?: string;
+      description?: string;
+      priority?: string;
+      assignedTo?: string;
+    };
+    if (!title || typeof title !== "string") {
+      res.status(400).json({ error: "title is required" });
+      return;
+    }
+    const ticket = ticketManager.create({
+      title,
+      description,
+      priority: (priority as Parameters<typeof ticketManager.create>[0]["priority"]) ?? "normal",
+      createdBy: "user",
+      assignedTo: assignedTo ?? "ceo",
+    });
+    res.status(201).json({ ticket });
+  });
+
+  router.get("/tickets/:id", (req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const ticket = ticketManager.getById(param(req, "id"));
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    const children = ticketManager.getChildren(ticket.id);
+    res.json({ ticket, children });
+  });
+
+  router.patch("/tickets/:id", (req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const ticketId = param(req, "id");
+    const ticket = ticketManager.getById(ticketId);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    const { status, assignedTo, priority } = req.body as {
+      status?: string;
+      assignedTo?: string;
+      priority?: string;
+    };
+    if (status) {
+      ticketManager.updateStatus(
+        ticketId,
+        status as Parameters<typeof ticketManager.updateStatus>[1],
+        "user"
+      );
+    }
+    if (assignedTo) {
+      ticketManager.assign(ticketId, assignedTo, "user");
+    }
+    if (priority) {
+      ticketManager.updatePriority(
+        ticketId,
+        priority as Parameters<typeof ticketManager.updatePriority>[1],
+        "user"
+      );
+    }
+    const updated = ticketManager.getById(ticketId);
+    res.json({ ticket: updated });
+  });
+
+  router.post("/tickets/:id/comment", (req: Request, res: Response) => {
+    if (!ticketManager) {
+      res.status(503).json({ error: "Ticket system not available" });
+      return;
+    }
+    const ticketId = param(req, "id");
+    const { comment } = req.body as { comment?: string };
+    if (!comment) {
+      res.status(400).json({ error: "comment is required" });
+      return;
+    }
+    const ticket = ticketManager.addComment(ticketId, "user", comment);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+    res.json({ ticket });
   });
 
   return router;

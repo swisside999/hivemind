@@ -6,6 +6,8 @@ import { AgentManager } from "../agents/AgentManager.js";
 import { AgentProcess } from "../agents/AgentProcess.js";
 import type { AgentMessage, EscalationRequest } from "./types.js";
 import type { AgentConfig, AgentState } from "../agents/types.js";
+import { TicketManager } from "../tickets/TicketManager.js";
+import type { Ticket } from "../tickets/types.js";
 
 const SCOPE = "Orchestrator";
 
@@ -23,6 +25,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   readonly escalationManager: EscalationManager;
   readonly agentManager: AgentManager;
   private workingDirectory: string;
+  ticketManager: TicketManager | null = null;
 
   constructor(workingDirectory: string) {
     super();
@@ -123,10 +126,108 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     };
   }
 
+  connectTicketManager(ticketManager: TicketManager): void {
+    this.ticketManager = ticketManager;
+    this.on("messageRouted", (message) => {
+      this.handleTicketFromMessage(message);
+    });
+    logger.info(SCOPE, "TicketManager connected");
+  }
+
   shutdown(): void {
     logger.info(SCOPE, "Shutting down orchestrator");
     this.agentManager.stopAll();
     this.messageBus.clear();
+  }
+
+  private handleTicketFromMessage(message: AgentMessage): void {
+    if (!this.ticketManager) return;
+    const tm = this.ticketManager;
+
+    const ticketId = this.findTicketIdFromThread(message);
+
+    switch (message.type) {
+      case "task_assignment": {
+        const parentTicketId = ticketId ?? (message.context?.ticketId as string | undefined) ?? null;
+        tm.create({
+          title: message.subject,
+          description: message.body,
+          priority: message.priority as Ticket["priority"],
+          createdBy: message.from,
+          assignedTo: message.to !== "broadcast" ? message.to : null,
+          parentTicketId: parentTicketId ?? null,
+        });
+        break;
+      }
+      case "task_update": {
+        if (ticketId) {
+          const ticket = tm.getById(ticketId);
+          if (ticket && ticket.status === "assigned") {
+            tm.updateStatus(ticketId, "in_progress", message.from);
+          }
+          tm.addComment(ticketId, message.from, message.body);
+        }
+        break;
+      }
+      case "review_request": {
+        if (ticketId) {
+          tm.updateStatus(ticketId, "in_review", message.from);
+        }
+        break;
+      }
+      case "review_result": {
+        if (ticketId) {
+          const bodyLower = message.body.toLowerCase();
+          const result: "approved" | "changes_requested" =
+            bodyLower.includes("approved") || bodyLower.includes("lgtm")
+              ? "approved"
+              : "changes_requested";
+          tm.addReview(ticketId, message.from, result);
+        }
+        break;
+      }
+      case "task_complete": {
+        if (ticketId) {
+          const ticket = tm.getById(ticketId);
+          if (ticket?.status === "qa") {
+            tm.addQaResult(ticketId, message.from, "passed");
+          } else {
+            tm.updateStatus(ticketId, "qa", message.from);
+          }
+        }
+        break;
+      }
+      case "escalation": {
+        if (ticketId) {
+          tm.addComment(ticketId, message.from, `Escalation: ${message.body}`);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  private findTicketIdFromThread(message: AgentMessage): string | null {
+    const contextTicketId = message.context?.ticketId;
+    if (typeof contextTicketId === "string") return contextTicketId;
+
+    if (!message.parentMessageId) return null;
+
+    const log = this.messageBus.getLog();
+    let currentId: string | undefined = message.parentMessageId;
+
+    while (currentId) {
+      const parent = log.find((m) => m.id === currentId);
+      if (!parent) break;
+
+      const parentTicketId = parent.context?.ticketId;
+      if (typeof parentTicketId === "string") return parentTicketId;
+
+      currentId = parent.parentMessageId;
+    }
+
+    return null;
   }
 
   private bindEvents(): void {

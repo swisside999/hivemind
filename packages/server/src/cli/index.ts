@@ -123,7 +123,7 @@ async function handleStart(args: string[]): Promise<void> {
   });
 
   const { MemoryManager } = await import("../memory/MemoryManager.js");
-  app.use("/api", createApiRouter({ orchestrator, projectManager: pm, memoryManager: null }));
+  app.use("/api", createApiRouter({ orchestrator, projectManager: pm, memoryManager: null, ticketManager: null }));
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
   const server = createServer(app);
