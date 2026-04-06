@@ -33,7 +33,7 @@ export function Header() {
 
         {/* Tab switcher */}
         <div style={{ display: "flex", gap: 2, marginLeft: 8 }}>
-          {(["floor", "tickets"] as const).map((view) => (
+          {(["floor", "tickets", "wiki"] as const).map((view) => (
             <button
               key={view}
               type="button"
@@ -50,7 +50,7 @@ export function Header() {
                 textTransform: "uppercase",
               }}
             >
-              {view === "floor" ? "THE FLOOR" : "TICKETS"}
+              {view === "floor" ? "THE FLOOR" : view === "tickets" ? "TICKETS" : "WIKI"}
             </button>
           ))}
         </div>

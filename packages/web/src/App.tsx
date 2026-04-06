@@ -11,6 +11,7 @@ import { NewProjectModal } from "./components/projects/NewProjectModal.js";
 import { TicketBoard } from "./components/tickets/TicketBoard.js";
 import { TicketDetail } from "./components/tickets/TicketDetail.js";
 import { NewTicketModal } from "./components/tickets/NewTicketModal.js";
+import { WikiPanel } from "./components/wiki/WikiPanel.js";
 
 export function App() {
   const { sendMessage, resolveEscalation } = useWebSocket();
@@ -35,7 +36,9 @@ export function App() {
 
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-auto">
-            {activeView === "floor" ? <FloorView /> : <TicketBoard />}
+            {activeView === "floor" && <FloorView />}
+            {activeView === "tickets" && <TicketBoard />}
+            {activeView === "wiki" && <WikiPanel />}
           </main>
 
           <ChatPanel sendMessage={sendMessage} />

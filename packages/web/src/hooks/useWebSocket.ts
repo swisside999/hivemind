@@ -24,6 +24,8 @@ export function useWebSocket() {
     addTicket,
     updateTicket,
     addTicketEvent,
+    setSharedMemory,
+    setUsageStats,
   } = useAppStore();
 
   const connect = useCallback(() => {
@@ -133,6 +135,10 @@ export function useWebSocket() {
       case "ticket:event": {
         const { ticketId, event } = payload as { ticketId: string; event: TicketEvent };
         addTicketEvent(ticketId, event);
+        break;
+      }
+      case "usage:stats": {
+        setUsageStats(payload as Record<string, { invocations: number; lastInvoked: string }>);
         break;
       }
     }

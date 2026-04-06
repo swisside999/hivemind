@@ -7,6 +7,7 @@ export function Sidebar() {
   const agentConfigs = useAppStore((s) => s.agentConfigs);
   const agentStates = useAppStore((s) => s.agentStates);
   const escalations = useAppStore((s) => s.escalations);
+  const usageStats = useAppStore((s) => s.usageStats);
 
   const activeCount = Array.from(agentStates.values()).filter((s) => s.status === "working").length;
 
@@ -72,6 +73,12 @@ export function Sidebar() {
             <span>Escalations</span>
             <span className={escalations.length > 0 ? "text-amber-400" : "text-gray-300"}>
               {escalations.length}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Invocations</span>
+            <span className="text-gray-300">
+              {Object.values(usageStats).reduce((sum, s) => sum + s.invocations, 0)}
             </span>
           </div>
         </div>
