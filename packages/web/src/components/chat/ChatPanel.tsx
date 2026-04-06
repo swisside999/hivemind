@@ -12,10 +12,11 @@ export function ChatPanel({ sendMessage }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const chatTarget = useAppStore((s) => s.chatTarget);
-  const chatMessages = useAppStore((s) => s.chatMessages);
+  const chatHistories = useAppStore((s) => s.chatHistories);
   const addChatMessage = useAppStore((s) => s.addChatMessage);
   const agentConfigs = useAppStore((s) => s.agentConfigs);
 
+  const chatMessages = chatHistories.get(chatTarget) ?? [];
   const targetConfig = agentConfigs.find((c) => c.name === chatTarget);
 
   useEffect(() => {

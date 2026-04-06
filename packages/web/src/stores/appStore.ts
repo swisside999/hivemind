@@ -14,6 +14,25 @@ interface ActiveConnection {
   type: string;
 }
 
+export type MoodType = "neutral" | "happy" | "focused" | "tipsy" | "drunk" | "annoyed" | "praised";
+
+export interface AgentMood {
+  type: MoodType;
+  beers: number;
+  praises: number;
+  pokes: number;
+  lastInteraction: string;
+}
+
+export interface Reaction {
+  id: string;
+  agentName: string;
+  emoji: string;
+  x: number;
+  y: number;
+  createdAt: number;
+}
+
 interface AppState {
   // Projects
   projects: ProjectSummary[];
@@ -27,12 +46,23 @@ interface AppState {
   setAgentConfigs: (configs: AgentConfig[]) => void;
   updateAgentState: (name: string, update: Partial<AgentState>) => void;
 
-  // Chat
+  // Chat (per-agent persistence)
   chatTarget: string;
-  chatMessages: ChatMessage[];
+  chatHistories: Map<string, ChatMessage[]>;
   setChatTarget: (agent: string) => void;
   addChatMessage: (message: ChatMessage) => void;
   clearChat: () => void;
+
+  // Agent moods (Tamagotchi)
+  agentMoods: Map<string, AgentMood>;
+  giveBeer: (agent: string) => void;
+  praiseAgent: (agent: string) => void;
+  pokeAgent: (agent: string) => void;
+
+  // Floating reactions
+  reactions: Reaction[];
+  addReaction: (reaction: Reaction) => void;
+  removeReaction: (id: string) => void;
 
   // Escalations
   escalations: EscalationRequest[];
@@ -84,11 +114,59 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   chatTarget: "ceo",
-  chatMessages: [],
-  setChatTarget: (agent) => set({ chatTarget: agent, chatMessages: [] }),
+  chatHistories: new Map(),
+  setChatTarget: (agent) => set({ chatTarget: agent }),
   addChatMessage: (message) =>
-    set((state) => ({ chatMessages: [...state.chatMessages, message] })),
-  clearChat: () => set({ chatMessages: [] }),
+    set((state) => {
+      const histories = new Map(state.chatHistories);
+      const existing = histories.get(state.chatTarget) ?? [];
+      histories.set(state.chatTarget, [...existing, message]);
+      return { chatHistories: histories };
+    }),
+  clearChat: () =>
+    set((state) => {
+      const histories = new Map(state.chatHistories);
+      histories.delete(state.chatTarget);
+      return { chatHistories: histories };
+    }),
+
+  agentMoods: new Map(),
+  giveBeer: (agent) =>
+    set((state) => {
+      const moods = new Map(state.agentMoods);
+      const mood = moods.get(agent) ?? { type: "neutral" as MoodType, beers: 0, praises: 0, pokes: 0, lastInteraction: "" };
+      mood.beers += 1;
+      mood.lastInteraction = new Date().toISOString();
+      mood.type = mood.beers >= 5 ? "drunk" : mood.beers >= 2 ? "tipsy" : "happy";
+      moods.set(agent, { ...mood });
+      return { agentMoods: moods };
+    }),
+  praiseAgent: (agent) =>
+    set((state) => {
+      const moods = new Map(state.agentMoods);
+      const mood = moods.get(agent) ?? { type: "neutral" as MoodType, beers: 0, praises: 0, pokes: 0, lastInteraction: "" };
+      mood.praises += 1;
+      mood.lastInteraction = new Date().toISOString();
+      mood.type = "praised";
+      moods.set(agent, { ...mood });
+      return { agentMoods: moods };
+    }),
+  pokeAgent: (agent) =>
+    set((state) => {
+      const moods = new Map(state.agentMoods);
+      const mood = moods.get(agent) ?? { type: "neutral" as MoodType, beers: 0, praises: 0, pokes: 0, lastInteraction: "" };
+      mood.pokes += 1;
+      mood.lastInteraction = new Date().toISOString();
+      mood.type = "annoyed";
+      moods.set(agent, { ...mood });
+      return { agentMoods: moods };
+    }),
+
+  reactions: [],
+  addReaction: (reaction) =>
+    set((state) => ({ reactions: [...state.reactions, reaction] })),
+  removeReaction: (id) =>
+    set((state) => ({ reactions: state.reactions.filter((r) => r.id !== id) })),
 
   escalations: [],
   addEscalation: (escalation) =>
