@@ -8,12 +8,15 @@ import type { AgentMessage, EscalationRequest } from "./types.js";
 import type { AgentConfig, AgentState } from "../agents/types.js";
 import { TicketManager } from "../tickets/TicketManager.js";
 import type { Ticket } from "../tickets/types.js";
+import { isGitRepo, getStatus, stageAndCommit } from "../utils/git.js";
 
 const SCOPE = "Orchestrator";
 
 export interface OrchestratorEvents {
   agentThought: [string, string];
+  agentChunk: [string, string];
   agentStatusChange: [string, string];
+  agentCommit: [string, { sha: string; files: string[]; message: string; ticketId?: string }];
   messageRouted: [AgentMessage];
   escalation: [EscalationRequest];
   escalationResolved: [EscalationRequest];
@@ -60,6 +63,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
     try {
       const response = await agent.startConversation(userMessage);
+      await this.handleAgentCommit(agentName, userMessage.slice(0, 72));
       return this.stripHivemindMessages(response);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -103,6 +107,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     try {
       const response = await agent.startConversation(prompt);
       logger.debug(SCOPE, `Agent ${message.to} responded: ${response.slice(0, 200)}`);
+      const ticketId = message.context?.ticketId as string | undefined;
+      await this.handleAgentCommit(message.to, message.subject.slice(0, 72), ticketId);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error(SCOPE, `Failed to deliver message to ${message.to}`, error);
@@ -274,6 +280,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       this.emit("agentThought", name, thought);
     });
 
+    agent.on("chunk", (delta: string) => {
+      this.emit("agentChunk", name, delta);
+    });
+
     agent.on("statusChange", (status: string) => {
       this.emit("agentStatusChange", name, status);
     });
@@ -313,6 +323,19 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       message.context ? `Context: ${JSON.stringify(message.context)}` : "",
       message.requiresResponse ? "This message requires your response." : "",
     ].filter(Boolean).join("\n");
+  }
+
+  private async handleAgentCommit(agentName: string, subject: string, ticketId?: string): Promise<void> {
+    if (!isGitRepo(this.workingDirectory)) return;
+    const changed = getStatus(this.workingDirectory);
+    if (changed.length === 0) return;
+    const result = stageAndCommit(this.workingDirectory, subject, agentName);
+    if (!result) return;
+    const commitData = { ...result, message: subject, ticketId };
+    this.emit("agentCommit", agentName, commitData);
+    if (ticketId && this.ticketManager) {
+      await this.ticketManager.addCommit(ticketId, agentName, result.sha, result.files, subject);
+    }
   }
 
   private stripHivemindMessages(output: string): string {

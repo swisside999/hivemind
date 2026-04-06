@@ -12,6 +12,7 @@ const HIVEMIND_MSG_END = "[/HIVEMIND:MESSAGE]";
 export interface AgentProcessEvents {
   message: [AgentMessage];
   thought: [string];
+  chunk: [string];
   statusChange: [AgentStatus];
   error: [Error];
   exit: [number | null];
@@ -21,6 +22,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   readonly config: AgentConfig;
   private process: ChildProcess | null = null;
   private outputBuffer = "";
+  private fullText = "";
   private status: AgentStatus = "idle";
   private workingDirectory: string;
   sharedMemory: string = "";
@@ -47,6 +49,9 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
 
     logger.info(SCOPE, `Starting agent ${this.config.name} with model ${this.config.model}`);
 
+    this.fullText = "";
+    this.outputBuffer = "";
+
     this.process = spawn("claude", this.buildArgs(initialPrompt), {
       cwd: this.workingDirectory,
       stdio: ["pipe", "pipe", "pipe"],
@@ -71,43 +76,41 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
         reject(new Error(`Agent ${this.config.name} is already running`));
         return;
       }
-
-      let output = "";
+      this.fullText = "";
+      this.outputBuffer = "";
 
       this.process = spawn("claude", this.buildArgs(prompt), {
         cwd: this.workingDirectory,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...process.env },
       });
-
       this.setStatus("working");
 
       this.process.stdout?.on("data", (chunk: Buffer) => {
-        const text = chunk.toString();
-        output += text;
-        this.processOutput(text);
+        this.processOutput(chunk.toString());
       });
-
       this.process.stderr?.on("data", (chunk: Buffer) => {
         logger.debug(SCOPE, `[${this.config.name} stderr] ${chunk.toString().trim()}`);
       });
-
       this.process.on("close", (code) => {
         this.setStatus("idle");
         this.process = null;
         if (code === 0) {
-          resolve(output);
+          resolve(this.stripHivemindMessages(this.fullText));
         } else {
           reject(new Error(`Agent ${this.config.name} exited with code ${code}`));
         }
       });
-
       this.process.on("error", (err) => {
         this.setStatus("error");
         this.process = null;
         reject(err);
       });
     });
+  }
+
+  private stripHivemindMessages(text: string): string {
+    return text.replace(/\[HIVEMIND:MESSAGE\][\s\S]*?\[\/HIVEMIND:MESSAGE\]/g, "").trim();
   }
 
   stop(): void {
@@ -159,7 +162,8 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   private buildArgs(prompt: string): string[] {
     const model = this.resolveModelFlag();
     return [
-      "--print",
+      "-p",
+      "--output-format", "stream-json",
       "--model", model,
       "--system-prompt", this.buildSystemPrompt(),
       "--dangerously-skip-permissions",
@@ -201,37 +205,70 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
 
   private processOutput(text: string): void {
     this.outputBuffer += text;
+    let newlineIdx = this.outputBuffer.indexOf("\n");
+    while (newlineIdx !== -1) {
+      const line = this.outputBuffer.slice(0, newlineIdx).trim();
+      this.outputBuffer = this.outputBuffer.slice(newlineIdx + 1);
+      if (line) this.processStreamLine(line);
+      newlineIdx = this.outputBuffer.indexOf("\n");
+    }
+  }
 
-    let startIdx = this.outputBuffer.indexOf(HIVEMIND_MSG_START);
-    while (startIdx !== -1) {
-      const endIdx = this.outputBuffer.indexOf(HIVEMIND_MSG_END, startIdx);
-      if (endIdx === -1) break;
-
-      const jsonStr = this.outputBuffer.slice(
-        startIdx + HIVEMIND_MSG_START.length,
-        endIdx
-      );
-
-      const beforeMessage = this.outputBuffer.slice(0, startIdx).trim();
-      if (beforeMessage) {
-        this.emit("thought", beforeMessage);
+  private processStreamLine(line: string): void {
+    try {
+      const obj = JSON.parse(line) as Record<string, unknown>;
+      const textDelta = this.extractTextDelta(obj);
+      if (textDelta) {
+        this.fullText += textDelta;
+        this.emit("chunk", textDelta);
+        this.checkForHivemindMessages();
       }
+    } catch {
+      // Non-JSON line fallback
+      this.fullText += line;
+      this.emit("thought", line);
+    }
+  }
 
+  private extractTextDelta(obj: Record<string, unknown>): string | null {
+    // Handle various stream-json message formats
+    if (obj.type === "assistant" || obj.type === "result") {
+      const content = obj.content;
+      if (typeof content === "string") return content;
+      if (Array.isArray(content)) {
+        const texts: string[] = [];
+        for (const block of content) {
+          if (typeof block === "string") texts.push(block);
+          else if (block && typeof block === "object" && "text" in block) {
+            const b = block as Record<string, unknown>;
+            if (typeof b.text === "string") texts.push(b.text);
+          }
+        }
+        if (texts.length > 0) return texts.join("");
+      }
+    }
+    if (obj.type === "content_block_delta") {
+      const delta = obj.delta as Record<string, unknown> | undefined;
+      if (delta && typeof delta.text === "string") return delta.text;
+    }
+    if (typeof obj.text === "string" && obj.text) return obj.text;
+    return null;
+  }
+
+  private checkForHivemindMessages(): void {
+    let startIdx = this.fullText.indexOf(HIVEMIND_MSG_START);
+    while (startIdx !== -1) {
+      const endIdx = this.fullText.indexOf(HIVEMIND_MSG_END, startIdx);
+      if (endIdx === -1) break;
+      const jsonStr = this.fullText.slice(startIdx + HIVEMIND_MSG_START.length, endIdx);
       try {
         const parsed = JSON.parse(jsonStr) as AgentMessage;
         this.emit("message", parsed);
       } catch (err) {
         logger.error(SCOPE, `Failed to parse agent message from ${this.config.name}: ${jsonStr}`, err);
       }
-
-      this.outputBuffer = this.outputBuffer.slice(endIdx + HIVEMIND_MSG_END.length);
-      startIdx = this.outputBuffer.indexOf(HIVEMIND_MSG_START);
-    }
-
-    const remainingTrimmed = this.outputBuffer.trim();
-    if (remainingTrimmed && !remainingTrimmed.includes(HIVEMIND_MSG_START)) {
-      this.emit("thought", remainingTrimmed);
-      this.outputBuffer = "";
+      this.fullText = this.fullText.slice(0, startIdx) + this.fullText.slice(endIdx + HIVEMIND_MSG_END.length);
+      startIdx = this.fullText.indexOf(HIVEMIND_MSG_START);
     }
   }
 

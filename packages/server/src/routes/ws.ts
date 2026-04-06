@@ -31,6 +31,14 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
     broadcast("agent:status", { agent: agentName, status });
   });
 
+  orchestrator.on("agentChunk", (agentName, delta) => {
+    broadcast("agent:chunk", { agent: agentName, delta });
+  });
+
+  orchestrator.on("agentCommit", (agentName, commitData) => {
+    broadcast("agent:commit", { agent: agentName, ...commitData });
+  });
+
   orchestrator.on("messageRouted", (message) => {
     broadcast("message:routed", message);
   });

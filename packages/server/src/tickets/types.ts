@@ -8,7 +8,8 @@ export type TicketEventType =
   | "review_submitted"
   | "qa_result"
   | "escalated"
-  | "closed";
+  | "closed"
+  | "commit";
 
 export interface TicketEventData {
   fromStatus?: TicketStatus;
@@ -19,6 +20,7 @@ export interface TicketEventData {
   reviewResult?: "approved" | "changes_requested";
   qaResult?: "passed" | "failed";
   reason?: string;
+  commit?: { sha: string; files: string[]; message: string };
 }
 
 export interface TicketEvent {

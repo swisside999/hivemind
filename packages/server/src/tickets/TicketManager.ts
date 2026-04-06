@@ -237,6 +237,16 @@ export class TicketManager extends EventEmitter<TicketManagerEvents> {
     return ticket;
   }
 
+  async addCommit(ticketId: string, actor: string, sha: string, files: string[], commitMessage: string): Promise<TicketEvent | null> {
+    const ticket = this.index.get(ticketId);
+    if (!ticket) return null;
+    ticket.updatedAt = new Date().toISOString();
+    const event = this.addEvent(ticket, "commit", actor, { commit: { sha, files, message: commitMessage } });
+    await this.persist();
+    this.emit("ticket:event", { ticketId, event });
+    return event;
+  }
+
   updatePriority(ticketId: string, priority: Ticket["priority"], actor: string): Ticket | null {
     const ticket = this.index.get(ticketId);
     if (!ticket) {
