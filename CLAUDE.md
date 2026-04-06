@@ -144,16 +144,22 @@ The Orchestrator intercepts these from agent stdout, routes them to the target a
 
 ## Competitive Landscape & Inspiration
 
-Hivemind exists in a fast-growing space. Key projects to watch:
+Hivemind exists in a fast-growing space. Key projects to watch and learn from:
 
-| Project | Stars | What it does | What we learn |
-|---------|-------|-------------|---------------|
-| [ClawTeam](https://github.com/HKUDS/ClawTeam) | 4.5k | Agent swarm intelligence, one-command automation | Autonomous operation, agent coordination patterns |
-| [VoltAgent](https://github.com/VoltAgent/voltagent) | 7.3k | TypeScript AI agent platform with observability | Agent observability UI, plugin architecture |
-| [awesome-design-md](https://github.com/VoltAgent/awesome-design-md) | 20k+ | DESIGN.md files for coding agents | Skill/prompt system for consistent UI output |
-| [Gather.town](https://gather.town) | N/A | Virtual office with spatial interaction | Visual inspiration for The Floor layout |
+| Project | Stars | What it does | What Hivemind should adopt |
+|---------|-------|-------------|---------------------------|
+| [ClawTeam](https://github.com/HKUDS/ClawTeam) | 4.5k | Agent swarm intelligence (Python). Leader/worker hierarchy, git worktree isolation per agent, ZeroMQ P2P messaging. 4.5k stars in 3 weeks. | Git-worktree-per-agent isolation model. TOML team templates for pre-defined structures. Inbox/outbox messaging pattern. Autonomous self-organization. |
+| [VoltAgent](https://github.com/VoltAgent/voltagent) | 7.3k | TypeScript AI agent platform with VoltOps observability console. Zod-typed tools, MCP support, workflow engine with suspend/resume. | Built-in observability (LLM call traces, agent behavior monitoring). Declarative workflow chains. `npm create` scaffolding CLI. MCP docs server for dev acquisition. |
+| [awesome-design-md](https://github.com/VoltAgent/awesome-design-md) | 20k+ | 58 DESIGN.md files capturing visual systems of popular sites. Viral — 20k stars in under a week. | Structured markdown is the best way to give agents domain knowledge. DESIGN.md convention is a template for HIVEMIND.md/TEAM.md team config files. |
+| [Gather.town](https://gather.town) | N/A | Virtual 2D office with proximity-based interaction. Tile-map aesthetic with avatars. | Spatial metaphor for agent workspace. Proximity-based awareness. 2D tile-map layout inspiration for The Floor. |
 
-**Hivemind's differentiator:** It's the only tool that combines a visual RPG-style company metaphor with real Claude Code CLI power. It's not another agent framework — it's a *company simulator* where AI agents have roles, personalities, and accountability.
+### Claude Code Plugin Ecosystem
+
+**buildwithclaude.com** hosts 497+ extensions: 53 Plugins, 124 Skills, 117 Subagents, 175 Commands, 28 Hooks. Install via `/plugin marketplace add`. Categories span dev tools, design, blockchain, data/AI, infrastructure. Hivemind should be packaged as a distributable plugin/skill on this marketplace.
+
+### Hivemind's Differentiator
+
+It's the only tool that combines a **visual RPG-style company metaphor** with real Claude Code CLI power. It's not another agent framework — it's a *company simulator* where AI agents have roles, personalities, and accountability. The visual UX (pixel-art floor, Tamagotchi interactions, Kanban tickets) makes multi-agent orchestration accessible and fun.
 
 ## Roadmap Summary
 

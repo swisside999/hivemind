@@ -59,21 +59,25 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [ ] Autonomous operation mode — continuous work with minimal user intervention
 
 ### Phase 7: Open Source Launch
-- [ ] Brand identity (logo, color system, tagline)
-- [ ] Repository cleanup (contributing guide, issue templates, code of conduct)
-- [ ] GitHub Actions CI/CD (lint, typecheck, build)
-- [ ] Docker support (one-command setup)
+- [ ] Brand identity (logo, color system, tagline) — see brief in CLAUDE.md
+- [ ] CONTRIBUTING.md, issue templates, Code of Conduct
+- [ ] GitHub Actions CI/CD (lint, typecheck, build on PR)
+- [ ] Docker Compose for one-command dev setup
 - [ ] README rewrite with screenshots, demo GIF, architecture diagram
-- [ ] npm package publishing (hivemind-ai)
+- [ ] npm package: `npx hivemind-ai init` quick start
+- [ ] Publish as a plugin/skill on buildwithclaude.com (497+ extension marketplace)
 - [ ] Landing page / docs site
 
 ### Phase 8: Community & Growth
-- [ ] Hackathon submission (Anthropic Build with Claude / other AI hackathons)
-- [ ] Social presence (X, LinkedIn, GitHub) — launch announcement, demo videos
+- [ ] Hackathon submission — check anthropic.com/events, AI hackathon platforms
+- [ ] Social presence (X, LinkedIn, GitHub) — launch post, demo video, architecture thread
 - [ ] Plugin/skill marketplace for community contributions
-- [ ] Study and learn from: ClawTeam, VoltAgent, Gather.town for inspiration
+- [ ] Git worktree isolation per agent (inspired by ClawTeam's approach)
+- [ ] Built-in observability console (inspired by VoltAgent's VoltOps)
+- [ ] TEAM.md convention — markdown team config files (inspired by awesome-design-md)
 - [ ] Multi-project hot-switching without restart
 - [ ] Settings panel (model config, API keys, themes)
+- [ ] MCP protocol support for tool integration
 
 ### Tier 2 Features (Backlog)
 - [ ] Agent XP & leveling system (pixel art evolves with experience)
