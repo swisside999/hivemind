@@ -116,7 +116,7 @@ export async function loadAllAgentDefinitions(directory: string): Promise<AgentC
       const agentConfig = await loadAgentDefinition(filePath);
       agents.push(agentConfig);
     } catch (err) {
-      logger.error(SCOPE, `Failed to load agent definition: ${file}`, err);
+      logger.error(SCOPE, `Failed to load agent definition: ${entry.name}`, err);
     }
   }
 

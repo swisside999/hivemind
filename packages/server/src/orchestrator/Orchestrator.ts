@@ -3,6 +3,7 @@ import { logger } from "../utils/logger.js";
 import { MessageBus } from "./MessageBus.js";
 import { EscalationManager } from "./EscalationManager.js";
 import { AgentManager } from "../agents/AgentManager.js";
+import { AgentProcess } from "../agents/AgentProcess.js";
 import type { AgentMessage, EscalationRequest } from "./types.js";
 import type { AgentConfig, AgentState } from "../agents/types.js";
 
@@ -83,13 +84,18 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.emit("messageRouted", message);
 
     const prompt = this.formatIncomingMessage(message);
+    const agent = this.agentManager.createAgent(message.to);
+    this.bindAgentEvents(message.to, agent);
+
     try {
-      const response = await this.agentManager.invokeAgent(message.to, prompt);
+      const response = await agent.startConversation(prompt);
       logger.debug(SCOPE, `Agent ${message.to} responded: ${response.slice(0, 200)}`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error(SCOPE, `Failed to deliver message to ${message.to}`, error);
       this.emit("error", message.to, error);
+    } finally {
+      this.agentManager.removeAgent(message.to);
     }
   }
 
@@ -137,8 +143,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private bindAgentEvents(name: string, agent: any): void {
+  private bindAgentEvents(name: string, agent: AgentProcess): void {
     agent.on("thought", (thought: string) => {
       this.emit("agentThought", name, thought);
     });

@@ -44,16 +44,9 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       return;
     }
 
-    const modelFlag = this.resolveModelFlag();
-
     logger.info(SCOPE, `Starting agent ${this.config.name} with model ${this.config.model}`);
 
-    this.process = spawn("claude", [
-      "--print",
-      "--model", modelFlag,
-      "--system-prompt", this.buildSystemPrompt(),
-      initialPrompt,
-    ], {
+    this.process = spawn("claude", this.buildArgs(initialPrompt), {
       cwd: this.workingDirectory,
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env },
@@ -78,15 +71,9 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
         return;
       }
 
-      const modelFlag = this.resolveModelFlag();
       let output = "";
 
-      this.process = spawn("claude", [
-        "--print",
-        "--model", modelFlag,
-        "--system-prompt", this.buildSystemPrompt(),
-        prompt,
-      ], {
+      this.process = spawn("claude", this.buildArgs(prompt), {
         cwd: this.workingDirectory,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...process.env },
@@ -162,6 +149,17 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
     ].join("\n");
 
     return `${hivemindInstructions}\n\n${this.config.systemPrompt}`;
+  }
+
+  private buildArgs(prompt: string): string[] {
+    const model = this.resolveModelFlag();
+    return [
+      "--print",
+      "--model", model,
+      "--system-prompt", this.buildSystemPrompt(),
+      "--dangerously-skip-permissions",
+      prompt,
+    ];
   }
 
   private resolveModelFlag(): string {

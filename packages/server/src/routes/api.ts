@@ -35,7 +35,7 @@ export function createApiRouter(deps: ApiDeps): Router {
 
   router.post("/projects", async (req: Request, res: Response) => {
     try {
-      const { name, displayName } = req.body as { name?: string; displayName?: string };
+      const { name, displayName, workingDirectory } = req.body as { name?: string; displayName?: string; workingDirectory?: string };
       if (!name || typeof name !== "string") {
         res.status(400).json({ error: "name is required" });
         return;
@@ -44,7 +44,7 @@ export function createApiRouter(deps: ApiDeps): Router {
         res.status(400).json({ error: "name must be lowercase alphanumeric with hyphens" });
         return;
       }
-      const project = await projectManager.init(name, displayName);
+      const project = await projectManager.init(name, displayName, workingDirectory);
       res.status(201).json({ project });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";

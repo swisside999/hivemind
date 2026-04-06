@@ -50,21 +50,18 @@ export class AgentManager {
     return agent;
   }
 
-  async invokeAgent(name: string, prompt: string): Promise<string> {
+  createAgent(name: string): AgentProcess {
     const config = this.configs.get(name);
     if (!config) {
       throw new Error(`No agent config found for: ${name}`);
     }
-
     const agent = new AgentProcess(config, this.workingDirectory);
     this.agents.set(name, agent);
+    return agent;
+  }
 
-    try {
-      const result = await agent.startConversation(prompt);
-      return result;
-    } finally {
-      this.agents.delete(name);
-    }
+  removeAgent(name: string): void {
+    this.agents.delete(name);
   }
 
   stopAgent(name: string): void {
