@@ -1,0 +1,27 @@
+{
+  "name": "hivemind",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orchestrate multiple Claude Code CLI sessions as a virtual software company",
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --filter @hivemind/server dev",
+    "dev:web": "pnpm --filter @hivemind/web dev",
+    "build": "pnpm -r build",
+    "build:server": "pnpm --filter @hivemind/server build",
+    "build:web": "pnpm --filter @hivemind/web build",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "executionEnv": {
+      "nodeVersion": "23.11.0"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
