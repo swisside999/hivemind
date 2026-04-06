@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAppStore } from "../stores/appStore.js";
-import type { AgentConfig, AgentState, AgentMessage, EscalationRequest } from "../types/index.js";
+import type { AgentConfig, AgentState, AgentMessage, EscalationRequest, Ticket, TicketEvent } from "../types/index.js";
 
 const WS_URL = import.meta.env.DEV
   ? `ws://${window.location.hostname}:3100`
@@ -19,6 +19,10 @@ export function useWebSocket() {
     addConnection,
     addChatMessage,
     chatTarget,
+    setTickets,
+    addTicket,
+    updateTicket,
+    addTicketEvent,
   } = useAppStore();
 
   const connect = useCallback(() => {
@@ -108,6 +112,24 @@ export function useWebSocket() {
       case "agent:error": {
         const { agent, error } = payload as { agent: string; error: string };
         updateAgentState(agent, { status: "error", currentThought: `Error: ${error}` });
+        break;
+      }
+      case "tickets:all": {
+        setTickets(payload as Ticket[]);
+        break;
+      }
+      case "ticket:created": {
+        addTicket(payload as Ticket);
+        break;
+      }
+      case "ticket:updated": {
+        const { ticketId, changes } = payload as { ticketId: string; changes: Partial<Ticket> };
+        updateTicket(ticketId, changes);
+        break;
+      }
+      case "ticket:event": {
+        const { ticketId, event } = payload as { ticketId: string; event: TicketEvent };
+        addTicketEvent(ticketId, event);
         break;
       }
     }

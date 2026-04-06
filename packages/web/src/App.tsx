@@ -8,6 +8,9 @@ import { FloorView } from "./components/floor/FloorView.js";
 import { ChatPanel } from "./components/chat/ChatPanel.js";
 import { AgentDetailModal } from "./components/agents/AgentDetailModal.js";
 import { NewProjectModal } from "./components/projects/NewProjectModal.js";
+import { TicketBoard } from "./components/tickets/TicketBoard.js";
+import { TicketDetail } from "./components/tickets/TicketDetail.js";
+import { NewTicketModal } from "./components/tickets/NewTicketModal.js";
 
 export function App() {
   const { sendMessage, resolveEscalation } = useWebSocket();
@@ -15,6 +18,9 @@ export function App() {
   const showAgentDetail = useAppStore((s) => s.showAgentDetail);
   const showNewProject = useAppStore((s) => s.showNewProject);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
+  const activeView = useAppStore((s) => s.activeView);
+  const showTicketDetail = useAppStore((s) => s.showTicketDetail);
+  const showNewTicket = useAppStore((s) => s.showNewTicket);
 
   useEffect(() => {
     fetchProjects();
@@ -29,7 +35,7 @@ export function App() {
 
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-auto">
-            <FloorView />
+            {activeView === "floor" ? <FloorView /> : <TicketBoard />}
           </main>
 
           <ChatPanel sendMessage={sendMessage} />
@@ -38,6 +44,8 @@ export function App() {
 
       {showAgentDetail && <AgentDetailModal />}
       {showNewProject && <NewProjectModal />}
+      {showTicketDetail && <TicketDetail />}
+      {showNewTicket && <NewTicketModal />}
     </div>
   );
 }

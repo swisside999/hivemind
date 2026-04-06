@@ -6,6 +6,8 @@ import type {
   EscalationRequest,
   ProjectSummary,
   AgentMessage,
+  Ticket,
+  TicketEvent,
 } from "../types/index.js";
 
 interface ActiveConnection {
@@ -88,6 +90,21 @@ interface AppState {
   // WebSocket
   connected: boolean;
   setConnected: (connected: boolean) => void;
+
+  // Tickets
+  activeView: "floor" | "tickets";
+  tickets: Ticket[];
+  selectedTicket: string | null;
+  showTicketDetail: boolean;
+  showNewTicket: boolean;
+  setActiveView: (view: "floor" | "tickets") => void;
+  setTickets: (tickets: Ticket[]) => void;
+  addTicket: (ticket: Ticket) => void;
+  updateTicket: (ticketId: string, changes: Partial<Ticket>) => void;
+  addTicketEvent: (ticketId: string, event: TicketEvent) => void;
+  setSelectedTicket: (id: string | null) => void;
+  setShowTicketDetail: (show: boolean) => void;
+  setShowNewTicket: (show: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -198,4 +215,29 @@ export const useAppStore = create<AppState>((set) => ({
 
   connected: false,
   setConnected: (connected) => set({ connected }),
+
+  activeView: "floor",
+  tickets: [],
+  selectedTicket: null,
+  showTicketDetail: false,
+  showNewTicket: false,
+  setActiveView: (view) => set({ activeView: view }),
+  setTickets: (tickets) => set({ tickets }),
+  addTicket: (ticket) =>
+    set((state) => ({ tickets: [...state.tickets, ticket] })),
+  updateTicket: (ticketId, changes) =>
+    set((state) => ({
+      tickets: state.tickets.map((t) =>
+        t.id === ticketId ? { ...t, ...changes, updatedAt: new Date().toISOString() } : t
+      ),
+    })),
+  addTicketEvent: (ticketId, event) =>
+    set((state) => ({
+      tickets: state.tickets.map((t) =>
+        t.id === ticketId ? { ...t, events: [...t.events, event] } : t
+      ),
+    })),
+  setSelectedTicket: (id) => set({ selectedTicket: id }),
+  setShowTicketDetail: (show) => set({ showTicketDetail: show }),
+  setShowNewTicket: (show) => set({ showNewTicket: show }),
 }));

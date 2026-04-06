@@ -5,6 +5,8 @@ export function Header() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const activeProject = useAppStore((s) => s.activeProject);
+  const activeView = useAppStore((s) => s.activeView);
+  const setActiveView = useAppStore((s) => s.setActiveView);
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-gray-800 bg-gray-900 px-4">
@@ -28,6 +30,30 @@ export function Header() {
             {activeProject}
           </span>
         )}
+
+        {/* Tab switcher */}
+        <div style={{ display: "flex", gap: 2, marginLeft: 8 }}>
+          {(["floor", "tickets"] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => setActiveView(view)}
+              style={{
+                fontFamily: "ui-monospace, monospace",
+                fontSize: 11,
+                letterSpacing: "0.07em",
+                padding: "3px 10px",
+                cursor: "pointer",
+                border: activeView === view ? "1px solid #3a3a5e" : "1px solid transparent",
+                background: activeView === view ? "#1a1a2e" : "transparent",
+                color: activeView === view ? "#d1d5db" : "#6b7280",
+                textTransform: "uppercase",
+              }}
+            >
+              {view === "floor" ? "THE FLOOR" : "TICKETS"}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
