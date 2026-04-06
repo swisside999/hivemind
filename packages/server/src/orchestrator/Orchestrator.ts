@@ -26,6 +26,8 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   readonly agentManager: AgentManager;
   private workingDirectory: string;
   ticketManager: TicketManager | null = null;
+  sharedMemoryContent: string = "";
+  private usageStats = new Map<string, { invocations: number; lastInvoked: string }>();
 
   constructor(workingDirectory: string) {
     super();
@@ -50,7 +52,11 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     }
 
     const agent = this.agentManager.getOrCreateAgent(agentName);
+    if (this.sharedMemoryContent) {
+      agent.sharedMemory = this.sharedMemoryContent;
+    }
     this.bindAgentEvents(agentName, agent);
+    this.trackUsage(agentName);
 
     try {
       const response = await agent.startConversation(userMessage);
@@ -88,6 +94,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
     const prompt = this.formatIncomingMessage(message);
     const agent = this.agentManager.createAgent(message.to);
+    if (this.sharedMemoryContent) {
+      agent.sharedMemory = this.sharedMemoryContent;
+    }
+    this.trackUsage(message.to);
     this.bindAgentEvents(message.to, agent);
 
     try {
@@ -134,10 +144,25 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     logger.info(SCOPE, "TicketManager connected");
   }
 
+  setSharedMemory(content: string): void {
+    this.sharedMemoryContent = content;
+  }
+
+  getUsageStats(): Record<string, { invocations: number; lastInvoked: string }> {
+    return Object.fromEntries(this.usageStats);
+  }
+
   shutdown(): void {
     logger.info(SCOPE, "Shutting down orchestrator");
     this.agentManager.stopAll();
     this.messageBus.clear();
+  }
+
+  private trackUsage(agentName: string): void {
+    const existing = this.usageStats.get(agentName) ?? { invocations: 0, lastInvoked: "" };
+    existing.invocations += 1;
+    existing.lastInvoked = new Date().toISOString();
+    this.usageStats.set(agentName, existing);
   }
 
   private handleTicketFromMessage(message: AgentMessage): void {

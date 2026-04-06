@@ -23,6 +23,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   private outputBuffer = "";
   private status: AgentStatus = "idle";
   private workingDirectory: string;
+  sharedMemory: string = "";
 
   constructor(config: AgentConfig, workingDirectory: string) {
     super();
@@ -129,7 +130,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   }
 
   private buildSystemPrompt(): string {
-    const hivemindInstructions = [
+    let hivemindInstructions = [
       `You are ${this.config.displayName} in the Hivemind system.`,
       `Your role: ${this.config.description}`,
       "",
@@ -147,6 +148,10 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       "",
       "## Your Personality & Instructions",
     ].join("\n");
+
+    if (this.sharedMemory) {
+      hivemindInstructions += "\n\n## Company Wiki (Shared Knowledge)\n" + this.sharedMemory;
+    }
 
     return `${hivemindInstructions}\n\n${this.config.systemPrompt}`;
   }

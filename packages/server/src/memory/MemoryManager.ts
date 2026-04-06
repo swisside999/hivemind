@@ -79,6 +79,30 @@ export class MemoryManager {
     return sections.join("\n\n");
   }
 
+  async readSharedMemory(): Promise<string> {
+    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    if (!existsSync(filePath)) return "";
+    return readFile(filePath, "utf-8");
+  }
+
+  async writeSharedMemory(content: string): Promise<void> {
+    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    await writeFile(filePath, content);
+    logger.debug(SCOPE, "Updated shared memory");
+  }
+
+  async appendSharedMemory(entry: string, author: string): Promise<void> {
+    const filePath = resolve(this.agentBaseDir, "..", "shared-memory.md");
+    const timestamp = new Date().toISOString();
+    const formattedEntry = `\n## ${timestamp} — ${author}\n${entry}\n`;
+    if (!existsSync(filePath)) {
+      await writeFile(filePath, `# Company Wiki\n\nShared knowledge across all agents.\n${formattedEntry}`);
+    } else {
+      await appendFile(filePath, formattedEntry);
+    }
+    logger.debug(SCOPE, `${author} appended to shared memory`);
+  }
+
   private async readFile(filePath: string): Promise<string> {
     if (!existsSync(filePath)) return "";
     return readFile(filePath, "utf-8");

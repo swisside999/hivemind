@@ -74,6 +74,8 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
       ws.send(JSON.stringify({ type: "tickets:all", payload: ticketManager.getAll() }));
     }
 
+    ws.send(JSON.stringify({ type: "usage:stats", payload: orchestrator.getUsageStats() }));
+
     ws.on("message", async (data) => {
       try {
         const parsed = JSON.parse(data.toString()) as WsMessage;

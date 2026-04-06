@@ -252,5 +252,39 @@ export function createApiRouter(deps: ApiDeps): Router {
     res.json({ ticket });
   });
 
+  // --- Shared Memory ---
+
+  router.get("/shared-memory", async (_req: Request, res: Response) => {
+    if (!deps.memoryManager) {
+      res.json({ content: "" });
+      return;
+    }
+    const content = await deps.memoryManager.readSharedMemory();
+    res.json({ content });
+  });
+
+  router.put("/shared-memory", async (req: Request, res: Response) => {
+    if (!deps.memoryManager) {
+      res.status(503).json({ error: "No project loaded" });
+      return;
+    }
+    const { content } = req.body as { content?: string };
+    if (content === undefined) {
+      res.status(400).json({ error: "content is required" });
+      return;
+    }
+    await deps.memoryManager.writeSharedMemory(content);
+    if (deps.orchestrator) {
+      deps.orchestrator.setSharedMemory(content);
+    }
+    res.json({ ok: true });
+  });
+
+  // --- Usage ---
+
+  router.get("/usage", (_req: Request, res: Response) => {
+    res.json({ usage: orchestrator.getUsageStats() });
+  });
+
   return router;
 }

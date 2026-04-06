@@ -46,6 +46,10 @@ async function main(): Promise<void> {
     if (ticketManager) {
       orchestrator.connectTicketManager(ticketManager);
     }
+    if (memoryManager) {
+      const sharedMem = await memoryManager.readSharedMemory();
+      orchestrator.setSharedMemory(sharedMem);
+    }
   }
 
   const app = express();
