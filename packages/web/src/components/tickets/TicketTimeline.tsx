@@ -42,6 +42,8 @@ function eventDescription(event: TicketEvent): string {
       return event.data.reason ? `escalated: ${event.data.reason}` : "escalated ticket";
     case "closed":
       return "closed ticket";
+    case "commit":
+      return `committed ${event.data.commit?.files.length ?? 0} files`;
     default:
       return event.type;
   }
@@ -64,6 +66,7 @@ function badgeForEvent(event: TicketEvent): { label: string; color: string } | n
       return { label: "FAILED", color: "#f87171" };
     }
   }
+  if (event.type === "commit") return { label: "COMMIT", color: "#4ade80" };
   return null;
 }
 
@@ -155,6 +158,40 @@ export function TicketTimeline({ events }: Props) {
                   }}
                 >
                   {event.data.comment}
+                </div>
+              )}
+
+              {/* Commit detail block */}
+              {event.type === "commit" && event.data.commit && (
+                <div
+                  style={{
+                    marginTop: 4,
+                    padding: "6px 8px",
+                    background: "#0a0a1a",
+                    border: "1px solid #1a1a2e",
+                    fontSize: 11,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <div style={{ marginBottom: 3 }}>
+                    <span style={{ color: "#9ca3af" }}>SHA: </span>
+                    <span
+                      style={{
+                        fontFamily: "ui-monospace, monospace",
+                        color: "#818cf8",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {event.data.commit.sha}
+                    </span>
+                  </div>
+                  <div style={{ color: "#d1d5db", marginBottom: 3 }}>
+                    {event.data.commit.message}
+                  </div>
+                  <div style={{ color: "#6b7280" }}>
+                    <span style={{ fontWeight: "bold" }}>Files: </span>
+                    {event.data.commit.files.join(", ")}
+                  </div>
                 </div>
               )}
             </div>

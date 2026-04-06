@@ -27,6 +27,7 @@ export function AgentNode({ node }: Props) {
   const setSelectedAgent = useAppStore((s) => s.setSelectedAgent);
   const setShowAgentDetail = useAppStore((s) => s.setShowAgentDetail);
   const agentMoods = useAppStore((s) => s.agentMoods);
+  const streamingText = useAppStore((s) => s.streamingText);
 
   const mood = agentMoods.get(config.name);
   const moodType: MoodType = mood?.type ?? "neutral";
@@ -111,8 +112,8 @@ export function AgentNode({ node }: Props) {
       )}
 
       {/* Thought bubble */}
-      {state.currentThought && isActive && (
-        <ThoughtBubble text={state.currentThought} />
+      {isActive && (streamingText.get(config.name) || state.currentThought) && (
+        <ThoughtBubble text={streamingText.get(config.name)?.slice(-80) ?? state.currentThought ?? ""} />
       )}
 
     </g>

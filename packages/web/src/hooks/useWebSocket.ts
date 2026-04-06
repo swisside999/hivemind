@@ -26,6 +26,9 @@ export function useWebSocket() {
     addTicketEvent,
     setSharedMemory,
     setUsageStats,
+    appendStreamingText,
+    clearStreamingText,
+    addFeedMessage,
   } = useAppStore();
 
   const connect = useCallback(() => {
@@ -84,9 +87,15 @@ export function useWebSocket() {
         updateAgentState(agent, { status, lastActivity: new Date().toISOString() });
         break;
       }
+      case "agent:chunk": {
+        const { agent, delta } = payload as { agent: string; delta: string };
+        appendStreamingText(agent, delta);
+        break;
+      }
       case "message:routed": {
         const msg = payload as AgentMessage;
         addConnection({ from: msg.from, to: msg.to, type: msg.type });
+        addFeedMessage(msg);
         setTimeout(() => {
           useAppStore.getState().removeConnection(msg.from, msg.to);
         }, 3000);
@@ -95,12 +104,28 @@ export function useWebSocket() {
       case "message:response": {
         const { agent, response } = payload as { agent: string; response: string };
         setIsThinking(false);
+        clearStreamingText(agent);
         addChatMessage({
           id: crypto.randomUUID(),
           role: "agent",
           agent,
           content: response,
           timestamp: new Date().toISOString(),
+        });
+        break;
+      }
+      case "agent:commit": {
+        const { agent, sha, files, message: commitMsg } = payload as { agent: string; sha: string; files: string[]; message: string };
+        addFeedMessage({
+          id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          from: agent,
+          to: "broadcast",
+          type: "status_update",
+          priority: "normal",
+          subject: `Committed ${sha}`,
+          body: `${commitMsg}\n\nFiles: ${files.join(", ")}`,
+          requiresResponse: false,
         });
         break;
       }

@@ -96,7 +96,7 @@ export type TicketStatus = "backlog" | "assigned" | "in_progress" | "in_review" 
 
 export type TicketEventType =
   | "created" | "assigned" | "status_change" | "comment"
-  | "review_submitted" | "qa_result" | "escalated" | "closed";
+  | "review_submitted" | "qa_result" | "escalated" | "closed" | "commit";
 
 export interface TicketEventData {
   fromStatus?: TicketStatus;
@@ -107,6 +107,7 @@ export interface TicketEventData {
   reviewResult?: "approved" | "changes_requested";
   qaResult?: "passed" | "failed";
   reason?: string;
+  commit?: { sha: string; files: string[]; message: string };
 }
 
 export interface TicketEvent {

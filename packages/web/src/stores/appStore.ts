@@ -91,6 +91,17 @@ interface AppState {
   isThinking: boolean;
   setIsThinking: (thinking: boolean) => void;
 
+  // Streaming
+  streamingText: Map<string, string>;
+  appendStreamingText: (agent: string, delta: string) => void;
+  clearStreamingText: (agent: string) => void;
+
+  // Company feed
+  feedMessages: AgentMessage[];
+  addFeedMessage: (message: AgentMessage) => void;
+  chatMode: "direct" | "feed";
+  setChatMode: (mode: "direct" | "feed") => void;
+
   // WebSocket
   connected: boolean;
   setConnected: (connected: boolean) => void;
@@ -237,6 +248,28 @@ export const useAppStore = create<AppState>((set) => ({
 
   isThinking: false,
   setIsThinking: (thinking) => set({ isThinking: thinking }),
+
+  streamingText: new Map(),
+  appendStreamingText: (agent, delta) =>
+    set((state) => {
+      const newMap = new Map(state.streamingText);
+      newMap.set(agent, (newMap.get(agent) ?? "") + delta);
+      return { streamingText: newMap };
+    }),
+  clearStreamingText: (agent) =>
+    set((state) => {
+      const newMap = new Map(state.streamingText);
+      newMap.delete(agent);
+      return { streamingText: newMap };
+    }),
+
+  feedMessages: [],
+  addFeedMessage: (message) =>
+    set((state) => ({
+      feedMessages: [...state.feedMessages.slice(-200), message],
+    })),
+  chatMode: "direct",
+  setChatMode: (mode) => set({ chatMode: mode }),
 
   connected: false,
   setConnected: (connected) => set({ connected }),
