@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1200px; height: 630px; overflow: hidden; background: #0a0a1a; font-family: ui-monospace, SFMono-Regular, monospace; }
+.card {
+  width: 1200px; height: 630px; position: relative;
+  background: #0a0a1a;
+  overflow: hidden;
+}
+/* Pixel grid pattern */
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+/* Stars */
+.star {
+  position: absolute; width: 2px; height: 2px; background: #818CF8; border-radius: 0;
+  animation: twinkle 3s infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: 0.2; } 100% { opacity: 0.8; } }
+
+/* Logo area */
+.logo-area {
+  position: absolute; top: 80px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center;
+}
+.logo-mark {
+  width: 80px; height: 80px; margin-bottom: 16px;
+  image-rendering: pixelated;
+}
+.wordmark {
+  font-size: 48px; font-weight: 700; color: #E2E8F0;
+  letter-spacing: 12px; text-transform: uppercase;
+}
+.tagline {
+  font-size: 18px; color: #94A3B8; margin-top: 8px; letter-spacing: 2px;
+}
+
+/* Agents org chart */
+.agents {
+  position: absolute; bottom: 100px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.agent-row {
+  display: flex; gap: 24px; align-items: center; position: relative;
+}
+.agent {
+  width: 16px; height: 16px; border-radius: 0; position: relative;
+  image-rendering: pixelated;
+}
+.agent::after {
+  content: ''; position: absolute; top: -8px; left: 50%; width: 1px; height: 8px;
+  border-left: 1px dashed rgba(99,102,241,0.3);
+}
+.agent-row:first-child .agent::after { display: none; }
+
+/* Connection lines */
+.conn {
+  position: absolute; border-top: 1px dashed rgba(99,102,241,0.2);
+}
+
+/* Footer */
+.footer {
+  position: absolute; bottom: 32px; left: 0; right: 0; text-align: center;
+  font-size: 13px; color: #4a4a6e; letter-spacing: 3px;
+}
+
+/* Pixel agent sprites - tiny 4x4 blocks */
+.px { position: absolute; width: 4px; height: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- Stars -->
+  <div class="star" style="top:45px;left:120px;animation-delay:0s"></div>
+  <div class="star" style="top:92px;left:890px;animation-delay:0.5s"></div>
+  <div class="star" style="top:180px;left:340px;animation-delay:1s"></div>
+  <div class="star" style="top:60px;left:750px;animation-delay:1.5s"></div>
+  <div class="star" style="top:150px;left:1050px;animation-delay:0.3s"></div>
+  <div class="star" style="top:30px;left:500px;animation-delay:2s"></div>
+  <div class="star" style="top:200px;left:160px;animation-delay:0.8s"></div>
+  <div class="star" style="top:110px;left:600px;animation-delay:1.2s"></div>
+
+  <!-- Logo -->
+  <div class="logo-area">
+    <!-- Inline pixel hive icon -->
+    <svg width="80" height="80" viewBox="0 0 32 32" shape-rendering="crispEdges" style="image-rendering:pixelated">
+      <rect x="12" y="2" width="2" height="2" fill="#1E1B4B"/><rect x="14" y="2" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="16" y="2" width="2" height="2" fill="#1E1B4B"/><rect x="18" y="2" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="10" y="4" width="2" height="2" fill="#1E1B4B"/><rect x="12" y="4" width="2" height="2" fill="#6366F1"/>
+      <rect x="14" y="4" width="2" height="2" fill="#6366F1"/><rect x="16" y="4" width="2" height="2" fill="#6366F1"/>
+      <rect x="18" y="4" width="2" height="2" fill="#6366F1"/><rect x="20" y="4" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="8" y="6" width="2" height="2" fill="#1E1B4B"/><rect x="10" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="12" y="6" width="2" height="2" fill="#818CF8"/><rect x="14" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="6" width="2" height="2" fill="#818CF8"/><rect x="18" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="20" y="6" width="2" height="2" fill="#6366F1"/><rect x="22" y="6" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="6" y="8" width="2" height="2" fill="#1E1B4B"/><rect x="8" y="8" width="2" height="2" fill="#6366F1"/>
+      <rect x="10" y="8" width="2" height="2" fill="#818CF8"/><rect x="12" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="14" y="8" width="2" height="2" fill="#818CF8"/><rect x="16" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="18" y="8" width="2" height="2" fill="#818CF8"/><rect x="20" y="8" width="2" height="2" fill="#6366F1"/>
+      <rect x="22" y="8" width="2" height="2" fill="#6366F1"/><rect x="24" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="6" y="10" width="2" height="2" fill="#1E1B4B"/><rect x="8" y="10" width="2" height="2" fill="#6366F1"/>
+      <rect x="10" y="10" width="2" height="2" fill="#6366F1"/><rect x="12" y="10" width="2" height="2" fill="#818CF8"/>
+      <rect x="14" y="10" width="2" height="2" fill="#A78BFA"/><rect x="16" y="10" width="2" height="2" fill="#A78BFA"/>
+      <rect x="18" y="10" width="2" height="2" fill="#6366F1"/><rect x="20" y="10" width="2" height="2" fill="#818CF8"/>
+      <rect x="22" y="10" width="2" height="2" fill="#6366F1"/><rect x="24" y="10" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="8" y="12" width="2" height="2" fill="#1E1B4B"/><rect x="10" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="12" y="12" width="2" height="2" fill="#818CF8"/><rect x="14" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="12" width="2" height="2" fill="#818CF8"/><rect x="18" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="20" y="12" width="2" height="2" fill="#6366F1"/><rect x="22" y="12" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="10" y="14" width="2" height="2" fill="#1E1B4B"/><rect x="12" y="14" width="2" height="2" fill="#6366F1"/>
+      <rect x="14" y="14" width="2" height="2" fill="#6366F1"/><rect x="16" y="14" width="2" height="2" fill="#6366F1"/>
+      <rect x="18" y="14" width="2" height="2" fill="#6366F1"/><rect x="20" y="14" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="12" y="16" width="2" height="2" fill="#1E1B4B"/><rect x="14" y="16" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="16" width="2" height="2" fill="#6366F1"/><rect x="18" y="16" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="4" y="4" width="2" height="2" fill="#A78BFA"/><rect x="26" y="4" width="2" height="2" fill="#A78BFA"/>
+      <rect x="2" y="10" width="2" height="2" fill="#A78BFA"/><rect x="28" y="10" width="2" height="2" fill="#A78BFA"/>
+    </svg>
+    <div class="wordmark">HIVEMIND</div>
+    <div class="tagline">Your AI company, visualized.</div>
+  </div>
+
+  <!-- Pixel Agent Org Chart -->
+  <div class="agents">
+    <!-- CEO row -->
+    <div class="agent-row">
+      <svg width="20" height="20" viewBox="0 0 5 5" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="2" y="0" width="1" height="1" fill="#FF6B35"/><!-- crown -->
+        <rect x="1" y="1" width="3" height="1" fill="#FF6B35"/>
+        <rect x="1" y="2" width="3" height="2" fill="#FF6B35"/>
+        <rect x="1" y="4" width="1" height="1" fill="#FF6B35"/><rect x="3" y="4" width="1" height="1" fill="#FF6B35"/>
+      </svg>
+    </div>
+    <!-- C-suite row -->
+    <div class="agent-row" style="gap:48px">
+      <svg width="16" height="16" viewBox="0 0 4 4" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="2" height="1" fill="#4ECDC4"/><rect x="0" y="1" width="4" height="2" fill="#4ECDC4"/>
+        <rect x="0" y="3" width="1" height="1" fill="#4ECDC4"/><rect x="3" y="3" width="1" height="1" fill="#4ECDC4"/>
+      </svg>
+      <svg width="16" height="16" viewBox="0 0 4 4" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="2" height="1" fill="#A78BFA"/><rect x="0" y="1" width="4" height="2" fill="#A78BFA"/>
+        <rect x="0" y="3" width="1" height="1" fill="#A78BFA"/><rect x="3" y="3" width="1" height="1" fill="#A78BFA"/>
+      </svg>
+      <svg width="16" height="16" viewBox="0 0 4 4" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="2" height="1" fill="#F59E0B"/><rect x="0" y="1" width="4" height="2" fill="#F59E0B"/>
+        <rect x="0" y="3" width="1" height="1" fill="#F59E0B"/><rect x="3" y="3" width="1" height="1" fill="#F59E0B"/>
+      </svg>
+    </div>
+    <!-- IC row -->
+    <div class="agent-row" style="gap:20px">
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#3B82F6"/><rect x="0" y="2" width="1" height="1" fill="#3B82F6"/><rect x="2" y="2" width="1" height="1" fill="#3B82F6"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#60A5FA"/><rect x="0" y="2" width="1" height="1" fill="#60A5FA"/><rect x="2" y="2" width="1" height="1" fill="#60A5FA"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#10B981"/><rect x="0" y="2" width="1" height="1" fill="#10B981"/><rect x="2" y="2" width="1" height="1" fill="#10B981"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#EC4899"/><rect x="0" y="2" width="1" height="1" fill="#EC4899"/><rect x="2" y="2" width="1" height="1" fill="#EC4899"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#F472B6"/><rect x="0" y="2" width="1" height="1" fill="#F472B6"/><rect x="2" y="2" width="1" height="1" fill="#F472B6"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#6366F1"/><rect x="0" y="2" width="1" height="1" fill="#6366F1"/><rect x="2" y="2" width="1" height="1" fill="#6366F1"/>
+      </svg>
+      <svg width="12" height="12" viewBox="0 0 3 3" shape-rendering="crispEdges" style="image-rendering:pixelated">
+        <rect x="0" y="0" width="3" height="2" fill="#EF4444"/><rect x="0" y="2" width="1" height="1" fill="#EF4444"/><rect x="2" y="2" width="1" height="1" fill="#EF4444"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Connection lines via SVG overlay -->
+  <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+    <!-- CEO to C-suite -->
+    <line x1="600" y1="392" x2="530" y2="410" stroke="#6366F1" stroke-width="1" stroke-dasharray="4 4" opacity="0.25"/>
+    <line x1="600" y1="392" x2="600" y2="410" stroke="#6366F1" stroke-width="1" stroke-dasharray="4 4" opacity="0.25"/>
+    <line x1="600" y1="392" x2="670" y2="410" stroke="#6366F1" stroke-width="1" stroke-dasharray="4 4" opacity="0.25"/>
+    <!-- C-suite to ICs -->
+    <line x1="530" y1="430" x2="480" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="530" y1="430" x2="510" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="600" y1="430" x2="560" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="600" y1="430" x2="590" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="670" y1="430" x2="650" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="670" y1="430" x2="690" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    <line x1="670" y1="430" x2="720" y2="450" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+  </svg>
+
+  <div class="footer">OPEN SOURCE &nbsp;·&nbsp; TYPESCRIPT &nbsp;·&nbsp; REACT &nbsp;·&nbsp; CLAUDE CODE</div>
+</div>
+</body>
+</html>

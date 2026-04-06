@@ -1,8 +1,14 @@
-# Hivemind
+<p align="center">
+  <img src="docs/assets/logo.svg" width="128" height="128" alt="Hivemind Logo" />
+</p>
 
-**Your AI company, visualized.**
+<h1 align="center">Hivemind</h1>
 
+<p align="center"><strong>Your AI company, visualized.</strong></p>
+
+<p align="center">
 Orchestrate multiple Claude Code CLI sessions as a virtual software company. Each agent has a role, personality, persistent memory, and authority level. You are the Board — speak to the CEO, watch your company work in real-time on a pixel-art RPG floor.
+</p>
 
 <!-- TODO: Replace with actual screenshot/demo GIF -->
 <!-- ![Hivemind Demo](docs/assets/demo.gif) -->

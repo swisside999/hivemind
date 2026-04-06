@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a1a; font-family: ui-monospace, SFMono-Regular, monospace; color: #E2E8F0; padding: 40px; min-height: 100vh; }
+
+.card {
+  max-width: 960px; margin: 0 auto;
+  background: #0f0f23;
+  border: 3px solid #2a2a4e;
+  border-top-color: #3a3a5e; border-left-color: #3a3a5e;
+  border-bottom-color: #12122a; border-right-color: #12122a;
+  padding: 32px;
+}
+h1 {
+  font-size: 20px; letter-spacing: 4px; text-transform: uppercase; color: #6366F1;
+  margin-bottom: 8px;
+}
+.subtitle { font-size: 12px; color: #94A3B8; margin-bottom: 32px; letter-spacing: 1px; }
+
+.section {
+  margin-bottom: 28px;
+}
+.section-title {
+  font-size: 13px; color: #818CF8; letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 12px; padding-bottom: 6px;
+  border-bottom: 1px solid #2a2a4e;
+}
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.swatch {
+  background: #1a1a2e;
+  border: 2px solid #2a2a4e;
+  border-top-color: #3a3a5e; border-left-color: #3a3a5e;
+  border-bottom-color: #12122a; border-right-color: #12122a;
+  padding: 8px; width: 140px;
+}
+.swatch-color {
+  width: 100%; height: 40px; margin-bottom: 6px;
+  image-rendering: pixelated;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.swatch-hex { font-size: 11px; color: #E2E8F0; }
+.swatch-label { font-size: 10px; color: #64748B; margin-top: 2px; }
+
+.swatch-sm { width: 80px; }
+.swatch-sm .swatch-color { height: 28px; }
+
+.agent-swatch {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4e;
+  margin-bottom: 4px;
+}
+.agent-dot { width: 16px; height: 16px; flex-shrink: 0; }
+.agent-info { display: flex; flex-direction: column; }
+.agent-role { font-size: 11px; color: #E2E8F0; }
+.agent-hex { font-size: 10px; color: #64748B; }
+
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+
+/* RPG corner decorations */
+.card::before {
+  content: '◆ HIVEMIND COLOR SYSTEM ◆';
+  display: block; text-align: center;
+  font-size: 10px; color: #3a3a5e; letter-spacing: 6px;
+  margin-bottom: 24px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Color Palette</h1>
+  <div class="subtitle">Hivemind Brand Identity — Complete Color Reference</div>
+
+  <div class="section">
+    <div class="section-title">Brand</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#6366F1"></div>
+        <div class="swatch-hex">#6366F1</div>
+        <div class="swatch-label">Primary / Accent</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#818CF8"></div>
+        <div class="swatch-hex">#818CF8</div>
+        <div class="swatch-label">Highlight</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#A78BFA"></div>
+        <div class="swatch-hex">#A78BFA</div>
+        <div class="swatch-label">Node Glow</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1E1B4B"></div>
+        <div class="swatch-hex">#1E1B4B</div>
+        <div class="swatch-label">Shadow</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Surfaces</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0a0a1a"></div>
+        <div class="swatch-hex">#0A0A1A</div>
+        <div class="swatch-label">Base / Darkest</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0f0f23"></div>
+        <div class="swatch-hex">#0F0F23</div>
+        <div class="swatch-label">Card / Panel</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1a1a2e"></div>
+        <div class="swatch-hex">#1A1A2E</div>
+        <div class="swatch-label">Elevated</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Borders (Pixel Inset)</div>
+    <div class="swatches">
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#3a3a5e"></div>
+        <div class="swatch-hex">#3A3A5E</div>
+        <div class="swatch-label">Top / Left</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#2a2a4e"></div>
+        <div class="swatch-hex">#2A2A4E</div>
+        <div class="swatch-label">Base</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#12122a"></div>
+        <div class="swatch-hex">#12122A</div>
+        <div class="swatch-label">Bottom / Right</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Text</div>
+    <div class="swatches">
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#E2E8F0"></div>
+        <div class="swatch-hex">#E2E8F0</div>
+        <div class="swatch-label">Primary</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#94A3B8"></div>
+        <div class="swatch-hex">#94A3B8</div>
+        <div class="swatch-label">Secondary</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#64748B"></div>
+        <div class="swatch-hex">#64748B</div>
+        <div class="swatch-label">Muted</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Agent Colors</div>
+    <div class="agent-grid">
+      <div class="agent-swatch"><div class="agent-dot" style="background:#FF6B35"></div><div class="agent-info"><span class="agent-role">CEO — Crown</span><span class="agent-hex">#FF6B35</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#4ECDC4"></div><div class="agent-info"><span class="agent-role">CTO — Glasses</span><span class="agent-hex">#4ECDC4</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#A78BFA"></div><div class="agent-info"><span class="agent-role">CPO — Beret</span><span class="agent-hex">#A78BFA</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#F59E0B"></div><div class="agent-info"><span class="agent-role">COO — Clipboard</span><span class="agent-hex">#F59E0B</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#3B82F6"></div><div class="agent-info"><span class="agent-role">Senior Dev — Hoodie</span><span class="agent-hex">#3B82F6</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#60A5FA"></div><div class="agent-info"><span class="agent-role">Junior Dev — Cap</span><span class="agent-hex">#60A5FA</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#10B981"></div><div class="agent-info"><span class="agent-role">Code Reviewer — Magnifier</span><span class="agent-hex">#10B981</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#EC4899"></div><div class="agent-info"><span class="agent-role">Designer — Paintbrush</span><span class="agent-hex">#EC4899</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#F472B6"></div><div class="agent-info"><span class="agent-role">Design Reviewer — Ruler</span><span class="agent-hex">#F472B6</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#6366F1"></div><div class="agent-info"><span class="agent-role">DevOps — Hardhat</span><span class="agent-hex">#6366F1</span></div></div>
+      <div class="agent-swatch"><div class="agent-dot" style="background:#EF4444"></div><div class="agent-info"><span class="agent-role">QA — Bug Net</span><span class="agent-hex">#EF4444</span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Semantic</div>
+    <div class="swatches">
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#10B981"></div>
+        <div class="swatch-hex">#10B981</div>
+        <div class="swatch-label">Success</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#F59E0B"></div>
+        <div class="swatch-hex">#F59E0B</div>
+        <div class="swatch-label">Warning</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#EF4444"></div>
+        <div class="swatch-hex">#EF4444</div>
+        <div class="swatch-label">Error</div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background:#3B82F6"></div>
+        <div class="swatch-hex">#3B82F6</div>
+        <div class="swatch-label">Info</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

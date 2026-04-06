@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 320px; overflow: hidden; background: #0a0a1a; font-family: ui-monospace, SFMono-Regular, monospace; }
+.banner {
+  width: 1280px; height: 320px; position: relative;
+  background: linear-gradient(90deg, #0a0a1a 0%, #0f0f23 100%);
+  overflow: hidden;
+}
+
+/* Subtle grid */
+.banner::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.02) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Floor border at bottom */
+.floor {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 16px;
+  background: repeating-linear-gradient(
+    90deg,
+    #1a1a2e 0px, #1a1a2e 16px,
+    #12122a 16px, #12122a 17px,
+    #1a1a2e 17px, #1a1a2e 32px
+  );
+  border-top: 2px solid #2a2a4e;
+}
+.floor::before {
+  content: ''; position: absolute; top: -2px; left: 0; right: 0; height: 2px;
+  background: #3a3a5e;
+}
+
+/* Logo area - left */
+.logo-group {
+  position: absolute; left: 64px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; gap: 24px;
+}
+
+.wordmark {
+  font-size: 42px; font-weight: 700; color: #E2E8F0;
+  letter-spacing: 10px;
+}
+.tagline {
+  font-size: 14px; color: #94A3B8; margin-top: 4px; letter-spacing: 1px;
+}
+
+/* Right scene: pixel agents at desks */
+.scene {
+  position: absolute; right: 80px; bottom: 32px;
+}
+
+/* Pixel desk */
+.desk {
+  position: absolute; width: 24px; height: 12px;
+  background: #2a2a4e;
+  border: 1px solid #3a3a5e;
+  border-bottom-color: #12122a; border-right-color: #12122a;
+}
+
+/* Pixel agent on desk */
+.mini-agent {
+  position: absolute; width: 8px; height: 12px; image-rendering: pixelated;
+}
+
+/* Thought bubble */
+.bubble {
+  position: absolute; width: 14px; height: 10px;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5e;
+  border-radius: 0;
+  font-size: 6px; color: #64748B; text-align: center; line-height: 10px;
+}
+.bubble::after {
+  content: ''; position: absolute; bottom: -3px; left: 4px;
+  width: 2px; height: 2px; background: #3a3a5e;
+}
+
+/* Kanban mini */
+.kanban {
+  position: absolute; width: 48px; height: 56px;
+  background: #0f0f23;
+  border: 1px solid #2a2a4e;
+  border-top-color: #3a3a5e; border-left-color: #3a3a5e;
+}
+.kanban-col {
+  display: inline-block; width: 14px; height: 48px; margin: 3px 1px;
+  border-right: 1px solid #1a1a2e;
+  vertical-align: top;
+}
+.kanban-card {
+  width: 10px; height: 4px; margin: 2px auto; border-radius: 0;
+}
+
+/* Connection lines */
+.conn-line {
+  position: absolute;
+  border-top: 1px dashed rgba(99,102,241,0.2);
+}
+</style>
+</head>
+<body>
+<div class="banner">
+  <!-- Logo group -->
+  <div class="logo-group">
+    <svg width="72" height="72" viewBox="0 0 32 32" shape-rendering="crispEdges" style="image-rendering:pixelated;flex-shrink:0">
+      <rect x="12" y="2" width="2" height="2" fill="#1E1B4B"/><rect x="14" y="2" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="16" y="2" width="2" height="2" fill="#1E1B4B"/><rect x="18" y="2" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="10" y="4" width="2" height="2" fill="#1E1B4B"/><rect x="12" y="4" width="2" height="2" fill="#6366F1"/>
+      <rect x="14" y="4" width="2" height="2" fill="#6366F1"/><rect x="16" y="4" width="2" height="2" fill="#6366F1"/>
+      <rect x="18" y="4" width="2" height="2" fill="#6366F1"/><rect x="20" y="4" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="8" y="6" width="2" height="2" fill="#1E1B4B"/><rect x="10" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="12" y="6" width="2" height="2" fill="#818CF8"/><rect x="14" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="6" width="2" height="2" fill="#818CF8"/><rect x="18" y="6" width="2" height="2" fill="#6366F1"/>
+      <rect x="20" y="6" width="2" height="2" fill="#6366F1"/><rect x="22" y="6" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="6" y="8" width="2" height="2" fill="#1E1B4B"/><rect x="8" y="8" width="2" height="2" fill="#6366F1"/>
+      <rect x="10" y="8" width="2" height="2" fill="#818CF8"/><rect x="12" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="14" y="8" width="2" height="2" fill="#818CF8"/><rect x="16" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="18" y="8" width="2" height="2" fill="#818CF8"/><rect x="20" y="8" width="2" height="2" fill="#6366F1"/>
+      <rect x="22" y="8" width="2" height="2" fill="#6366F1"/><rect x="24" y="8" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="6" y="10" width="2" height="2" fill="#1E1B4B"/><rect x="8" y="10" width="2" height="2" fill="#6366F1"/>
+      <rect x="10" y="10" width="2" height="2" fill="#6366F1"/><rect x="12" y="10" width="2" height="2" fill="#818CF8"/>
+      <rect x="14" y="10" width="2" height="2" fill="#A78BFA"/><rect x="16" y="10" width="2" height="2" fill="#A78BFA"/>
+      <rect x="18" y="10" width="2" height="2" fill="#6366F1"/><rect x="20" y="10" width="2" height="2" fill="#818CF8"/>
+      <rect x="22" y="10" width="2" height="2" fill="#6366F1"/><rect x="24" y="10" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="8" y="12" width="2" height="2" fill="#1E1B4B"/><rect x="10" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="12" y="12" width="2" height="2" fill="#818CF8"/><rect x="14" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="12" width="2" height="2" fill="#818CF8"/><rect x="18" y="12" width="2" height="2" fill="#6366F1"/>
+      <rect x="20" y="12" width="2" height="2" fill="#6366F1"/><rect x="22" y="12" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="10" y="14" width="2" height="2" fill="#1E1B4B"/><rect x="12" y="14" width="2" height="2" fill="#6366F1"/>
+      <rect x="14" y="14" width="2" height="2" fill="#6366F1"/><rect x="16" y="14" width="2" height="2" fill="#6366F1"/>
+      <rect x="18" y="14" width="2" height="2" fill="#6366F1"/><rect x="20" y="14" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="12" y="16" width="2" height="2" fill="#1E1B4B"/><rect x="14" y="16" width="2" height="2" fill="#6366F1"/>
+      <rect x="16" y="16" width="2" height="2" fill="#6366F1"/><rect x="18" y="16" width="2" height="2" fill="#1E1B4B"/>
+      <rect x="4" y="4" width="2" height="2" fill="#A78BFA"/><rect x="26" y="4" width="2" height="2" fill="#A78BFA"/>
+      <rect x="2" y="10" width="2" height="2" fill="#A78BFA"/><rect x="28" y="10" width="2" height="2" fill="#A78BFA"/>
+    </svg>
+    <div>
+      <div class="wordmark">HIVEMIND</div>
+      <div class="tagline">Your AI company, visualized.</div>
+    </div>
+  </div>
+
+  <!-- Right scene: The Floor -->
+  <div class="scene">
+    <!-- Agent 1: CEO (orange) at desk -->
+    <div class="desk" style="left:0;top:40px"></div>
+    <svg style="position:absolute;left:8px;top:26px" width="8" height="14" viewBox="0 0 4 7" shape-rendering="crispEdges">
+      <rect x="1" y="0" width="2" height="1" fill="#FF6B35"/>
+      <rect x="1" y="1" width="2" height="1" fill="#FF6B35"/>
+      <rect x="0" y="2" width="4" height="3" fill="#FF6B35"/>
+      <rect x="0" y="5" width="1" height="2" fill="#FF6B35"/><rect x="3" y="5" width="1" height="2" fill="#FF6B35"/>
+    </svg>
+    <div class="bubble" style="left:2px;top:10px">{ }</div>
+
+    <!-- Agent 2: Senior Dev (blue) at desk -->
+    <div class="desk" style="left:60px;top:80px"></div>
+    <svg style="position:absolute;left:68px;top:66px" width="8" height="14" viewBox="0 0 4 7" shape-rendering="crispEdges">
+      <rect x="1" y="0" width="2" height="1" fill="#3B82F6"/>
+      <rect x="1" y="1" width="2" height="1" fill="#3B82F6"/>
+      <rect x="0" y="2" width="4" height="3" fill="#3B82F6"/>
+      <rect x="0" y="5" width="1" height="2" fill="#3B82F6"/><rect x="3" y="5" width="1" height="2" fill="#3B82F6"/>
+    </svg>
+    <div class="bubble" style="left:62px;top:50px">></div>
+
+    <!-- Agent 3: QA (red) -->
+    <svg style="position:absolute;left:120px;top:106px" width="8" height="14" viewBox="0 0 4 7" shape-rendering="crispEdges">
+      <rect x="1" y="0" width="2" height="1" fill="#EF4444"/>
+      <rect x="1" y="1" width="2" height="1" fill="#EF4444"/>
+      <rect x="0" y="2" width="4" height="3" fill="#EF4444"/>
+      <rect x="0" y="5" width="1" height="2" fill="#EF4444"/><rect x="3" y="5" width="1" height="2" fill="#EF4444"/>
+    </svg>
+    <div class="bubble" style="left:115px;top:90px">!</div>
+
+    <!-- Agent 4: Designer (pink) at desk -->
+    <div class="desk" style="left:150px;top:60px"></div>
+    <svg style="position:absolute;left:158px;top:46px" width="8" height="14" viewBox="0 0 4 7" shape-rendering="crispEdges">
+      <rect x="1" y="0" width="2" height="1" fill="#EC4899"/>
+      <rect x="1" y="1" width="2" height="1" fill="#EC4899"/>
+      <rect x="0" y="2" width="4" height="3" fill="#EC4899"/>
+      <rect x="0" y="5" width="1" height="2" fill="#EC4899"/><rect x="3" y="5" width="1" height="2" fill="#EC4899"/>
+    </svg>
+    <div class="bubble" style="left:152px;top:30px">♦</div>
+
+    <!-- Agent 5: CTO (teal) -->
+    <svg style="position:absolute;left:40px;top:106px" width="8" height="14" viewBox="0 0 4 7" shape-rendering="crispEdges">
+      <rect x="1" y="0" width="2" height="1" fill="#4ECDC4"/>
+      <rect x="1" y="1" width="2" height="1" fill="#4ECDC4"/>
+      <rect x="0" y="2" width="4" height="3" fill="#4ECDC4"/>
+      <rect x="0" y="5" width="1" height="2" fill="#4ECDC4"/><rect x="3" y="5" width="1" height="2" fill="#4ECDC4"/>
+    </svg>
+
+    <!-- Mini Kanban -->
+    <div class="kanban" style="position:absolute;left:200px;top:40px">
+      <div class="kanban-col">
+        <div class="kanban-card" style="background:#FF6B35"></div>
+        <div class="kanban-card" style="background:#3B82F6"></div>
+        <div class="kanban-card" style="background:#EC4899"></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-card" style="background:#4ECDC4"></div>
+        <div class="kanban-card" style="background:#10B981"></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-card" style="background:#60A5FA"></div>
+      </div>
+    </div>
+
+    <!-- Connection lines -->
+    <svg style="position:absolute;top:0;left:0;width:280px;height:140px;pointer-events:none">
+      <line x1="16" y1="52" x2="72" y2="80" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.2"/>
+      <line x1="16" y1="52" x2="162" y2="60" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+      <line x1="72" y1="92" x2="124" y2="110" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+      <line x1="16" y1="52" x2="44" y2="106" stroke="#6366F1" stroke-width="1" stroke-dasharray="3 3" opacity="0.15"/>
+    </svg>
+  </div>
+
+  <!-- Floor -->
+  <div class="floor"></div>
+</div>
+</body>
+</html>
