@@ -10,8 +10,9 @@
 Orchestrate multiple Claude Code CLI sessions as a virtual software company. Each agent has a role, personality, persistent memory, and authority level. You are the Board — speak to the CEO, watch your company work in real-time on a pixel-art RPG floor.
 </p>
 
-<!-- TODO: Replace with actual screenshot/demo GIF -->
-<!-- ![Hivemind Demo](docs/assets/demo.gif) -->
+<p align="center">
+  <img src="docs/assets/screenshot-floor.png" width="720" alt="The Floor — pixel-art agents in org-chart layout" />
+</p>
 
 ---
 
@@ -35,6 +36,19 @@ The GUI renders it all as a pixel-art office floor where 8-bit characters think,
 - **Inter-agent communication** — Typed message protocol with escalation chains
 - **Customizable agents** — Edit any agent's personality, role, or authority via markdown files
 - **CLI + GUI** — Full command-line interface alongside the visual experience
+
+<details>
+<summary><strong>More screenshots</strong></summary>
+
+**Kanban Ticket Board** — Agents auto-create and manage tickets as work flows through the hierarchy:
+
+<img src="docs/assets/screenshot-tickets.png" width="720" alt="Ticket Board" />
+
+**Company Wiki** — Shared knowledge base across all agents:
+
+<img src="docs/assets/screenshot-wiki.png" width="720" alt="Company Wiki" />
+
+</details>
 
 ## Architecture
 
