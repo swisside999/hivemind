@@ -174,6 +174,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
     return [
       "-p",
       "--output-format", "stream-json",
+      "--verbose",
       "--model", model,
       "--system-prompt", this.buildSystemPrompt(),
       "--dangerously-skip-permissions",
@@ -242,28 +243,35 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   }
 
   private extractTextDelta(obj: Record<string, unknown>): string | null {
-    // Handle various stream-json message formats
-    if (obj.type === "assistant" || obj.type === "result") {
-      const content = obj.content;
-      if (typeof content === "string") return content;
-      if (Array.isArray(content)) {
-        const texts: string[] = [];
-        for (const block of content) {
-          if (typeof block === "string") texts.push(block);
-          else if (block && typeof block === "object" && "text" in block) {
-            const b = block as Record<string, unknown>;
-            if (typeof b.text === "string") texts.push(b.text);
-          }
-        }
-        if (texts.length > 0) return texts.join("");
-      }
+    // Handle stream-json "assistant" format (verbose):
+    // { type: "assistant", message: { content: [{type:"text", text:"..."}] } }
+    if (obj.type === "assistant") {
+      const message = obj.message as Record<string, unknown> | undefined;
+      const content = message?.content ?? obj.content;
+      const extracted = this.extractTextFromContent(content);
+      if (extracted) return extracted;
     }
+    // Skip "result" type — it duplicates the final assistant message text.
     if (obj.type === "content_block_delta") {
       const delta = obj.delta as Record<string, unknown> | undefined;
       if (delta && typeof delta.text === "string") return delta.text;
     }
     if (typeof obj.text === "string" && obj.text) return obj.text;
     return null;
+  }
+
+  private extractTextFromContent(content: unknown): string | null {
+    if (typeof content === "string") return content;
+    if (!Array.isArray(content)) return null;
+    const texts: string[] = [];
+    for (const block of content) {
+      if (typeof block === "string") texts.push(block);
+      else if (block && typeof block === "object" && "text" in block) {
+        const b = block as Record<string, unknown>;
+        if (typeof b.text === "string") texts.push(b.text);
+      }
+    }
+    return texts.length > 0 ? texts.join("") : null;
   }
 
   private checkForHivemindMessages(): void {
