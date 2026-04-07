@@ -50,7 +50,11 @@ User → Chat Panel → WebSocket → Orchestrator → AgentProcess (claude CLI)
 - `ChatPanel` — DIRECT (per-agent chat) / FEED (company-wide conversation stream)
 - `TicketBoard` — Kanban columns (Backlog → In Progress → Review → QA → Done)
 - `WikiPanel` — Shared company knowledge base (markdown editor)
+- `MetricsPanel` — Per-agent performance dashboard (invocations, response times, success rates)
+- `SettingsPanel` — Runtime config (model, auto-commit, log level, intelligent selection, export)
 - `appStore` (Zustand) — all global state, WebSocket-synced
+
+**View tabs:** The Header has 5 tabs that switch the main content area via `activeView` state: `floor`, `tickets`, `wiki`, `metrics`, `settings`.
 
 ## Running the Project
 
@@ -68,7 +72,7 @@ curl -X POST http://localhost:3100/api/projects \
   -d '{"name":"my-project","displayName":"My Project","workingDirectory":"/path/to/target"}'
 ```
 
-Then restart the server to load the project's agents.
+Projects can be hot-switched without restarting the server — click a project in the sidebar to trigger `POST /api/projects/switch`, which resets the orchestrator and rebinds the TicketManager/MemoryManager in place.
 
 ## Code Conventions
 
@@ -166,12 +170,23 @@ It's the only tool that combines a **visual RPG-style company metaphor** with re
 
 ## Roadmap Summary
 
-See `progress.md` for the full tracker. Next priorities:
+See `progress.md` for the full tracker.
 
-1. **Skills system** — Agents should invoke superpowers skills, DESIGN.md patterns, and custom skills. Skill usage should be visually shown on The Floor.
-2. **Intelligent model selection** — Auto-pick opus/sonnet/haiku based on task complexity to be economic with usage.
-3. **Session usage awareness** — Display Claude API limits, auto-resume work on reset.
-4. **Open source launch** — Brand identity, community prep, GitHub Actions, Docker, npm publish.
+**Shipped (2026-04-06 / 07):**
+- Open source launch infrastructure (CI, Docker, brand identity)
+- 21 security/correctness fixes from code review
+- Intelligent model selection (task complexity → model override, feature-flagged)
+- Settings panel (runtime config + log export)
+- Performance metrics dashboard (per-agent invocations, response times, success rates)
+- Multi-project hot-switching (no server restart)
+- Desktop notifications + 8-bit sound effects (Web Audio API)
+- npm package prep (`hivemind-ai`, ready for publish)
+
+**Next priorities:**
+1. **Skills system** — Agents invoke superpowers skills, DESIGN.md patterns, and custom skills. Skill usage should be visually shown on The Floor.
+2. **Session usage awareness** — Display Claude API limits, auto-resume work on reset.
+3. **MCP protocol support** — Tool integration via Model Context Protocol.
+4. **Git worktree isolation** — Per-agent branches for safe concurrent work (inspired by ClawTeam).
 5. **Hackathon submission** — Target Anthropic's Build with Claude or similar AI hackathons.
 
 ## Open Source Preparation Checklist
@@ -184,7 +199,7 @@ See `progress.md` for the full tracker. Next priorities:
 - [x] `.env.example` with documented config options
 - [x] Architecture diagram in README
 - [ ] Demo GIF/video showing the full workflow
-- [ ] npm package with `npx hivemind-ai init` quick start
+- [x] npm package prep: `hivemind-ai` configured for publish (not yet published to registry)
 - [x] LICENSE already MIT
 
 ## Brand Identity Brief

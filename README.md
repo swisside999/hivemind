@@ -31,6 +31,12 @@ The GUI renders it all as a pixel-art office floor where 8-bit characters think,
 - **Tamagotchi interactions** — Praise, poke, or buy your agents a beer. Mood affects behavior.
 - **Kanban ticket system** — Agents auto-create and manage tickets as work flows through the hierarchy
 - **Company wiki** — Shared knowledge base across all agents
+- **Performance metrics dashboard** — Track per-agent invocations, response times, and success rates
+- **Intelligent model selection** — Auto-pick haiku/sonnet/opus based on task complexity (feature-flagged)
+- **Settings panel** — Runtime config for model, auto-commit, log level, and smart selection
+- **Multi-project hot-switching** — Switch between companies without restarting the server
+- **Desktop notifications + 8-bit sound effects** — Stay on top of escalations with retro flair
+- **Log export** — Download full conversation and ticket history as JSON
 - **Streaming responses** — See agent thoughts in real-time as they work
 - **Git integration** — Agents auto-commit their work with attribution
 - **Inter-agent communication** — Typed message protocol with escalation chains
@@ -213,14 +219,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide.
 
 ## Roadmap
 
+**Shipped recently:**
+- [x] Intelligent model selection, settings panel, performance metrics
+- [x] Multi-project hot-switching, desktop notifications, 8-bit sound effects
+- [x] Log export, npm package prep (`hivemind-ai`)
+
+**Next up:**
 - [ ] **Skill system** — Agents invoke skills visible on The Floor
-- [ ] **Intelligent model selection** — Auto-pick opus/sonnet/haiku per task complexity
 - [ ] **Session usage awareness** — Display limits, auto-resume on reset
-- [ ] **npm package** — `npx hivemind-ai init`
-- [ ] **Agent XP & leveling** — Pixel art evolves with experience
 - [ ] **Git worktree isolation** — Per-agent isolated branches
 - [ ] **MCP protocol support** — Tool integration via Model Context Protocol
-- [ ] **Sound effects** — 8-bit bleeps for events
+- [ ] **Agent XP & leveling** — Pixel art evolves with experience
 
 See [progress.md](progress.md) for the full tracker.
 

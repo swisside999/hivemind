@@ -1,7 +1,7 @@
 # Hivemind — Progress
 
 ## Current Phase
-Phase 5: Tier 1 Complete — preparing for open source launch
+Phase 6 in progress — Skills, Intelligence, and Quality of Life. Public on GitHub at https://github.com/swisside999/hivemind
 
 ## Completed Phases
 
@@ -50,11 +50,24 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [x] 14 major correctness fixes (listener leaks, race conditions, persist safety, UX)
 - [x] Brand identity (pixel-art logo, favicon, social card, color palette, README banner)
 
+### Phase 6 (partial): Intelligence & Quality of Life
+- [x] Intelligent model selection (feature-flagged task-complexity analysis)
+- [x] Settings panel (model, auto-commit, log level, intelligent selection + log export)
+- [x] Desktop notifications on escalations and agent errors
+- [x] 8-bit sound effects via Web Audio API (7 event types)
+- [x] Multi-project hot-switching (POST /api/projects/switch, no server restart)
+- [x] Agent performance metrics dashboard (METRICS view)
+- [x] npm package prep (`hivemind-ai` ready for publish)
+
 ## Timeline
 - 2026-04-06: Full project built from scratch through Phase 5
 - 2026-04-06: Phase 7 open source infrastructure created
 - 2026-04-06: 21 security/correctness fixes from code review
 - 2026-04-06: Brand identity assets integrated
+- 2026-04-06: Public GitHub launch at github.com/swisside999/hivemind
+- 2026-04-06: GUI screenshots captured and added to README
+- 2026-04-07: Batch 1 features (intelligent model selection, settings panel, notifications, sounds)
+- 2026-04-07: Batch 2 features (hot-switching, metrics dashboard, npm package prep)
 
 ---
 
