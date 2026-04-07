@@ -131,6 +131,15 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       return;
     }
 
+    // Enforce the org chart. The CEO has no authority to message the Designer
+    // directly — they must go through the CPO. Without this check, agents
+    // freely violate the chain of command (the system prompt's "delegate to
+    // your reports" instruction is purely advisory).
+    if (!this.canRoute(message.from, message.to)) {
+      this.rejectIllegalRoute(message);
+      return;
+    }
+
     this.messageBus.routeExistingMessage(message);
     this.emit("messageRouted", message);
     this.incrementMessagesRouted(message.to);
@@ -389,6 +398,102 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     }
 
     return null;
+  }
+
+  /**
+   * Returns true if `from` is structurally allowed to message `to` based on
+   * the org chart. The user can talk to anyone; agents can talk to their
+   * direct reports (delegation down), their supervisor (status up), or peers
+   * sharing the same supervisor (cross-team coordination).
+   *
+   * Note: two top-level agents (both with `reportsTo === null`) are NOT peers.
+   * They report to the user/Board, and any cross-top-level coordination must
+   * be arbitrated by the user — agents with no common supervisor cannot side-
+   * channel each other.
+   */
+  private canRoute(from: string, to: string): boolean {
+    if (from === "user" || from === "system") return true;
+    if (to === "user" || to === "broadcast") return true;
+    if (from === to) return false;
+
+    const fromCfg = this.agentManager.getConfig(from);
+    const toCfg = this.agentManager.getConfig(to);
+    if (!fromCfg || !toCfg) return false;
+
+    if (fromCfg.directReports.includes(to)) return true;
+    if (fromCfg.reportsTo === to) return true;
+    if (fromCfg.reportsTo && fromCfg.reportsTo === toCfg.reportsTo) return true;
+
+    logger.debug(SCOPE, `canRoute denied: ${from} → ${to} (not in chain of command)`);
+    return false;
+  }
+
+  /**
+   * Walk up `to`'s reporting chain looking for an agent that is one of
+   * `from`'s direct reports. Returns the name of that intermediary, which is
+   * the proper next hop for delegation. Returns null if no such path exists.
+   *
+   * Defensive: handles misconfigured agent.md files where an agent lists
+   * itself as a direct report (would otherwise return `from` as nonsense
+   * advice).
+   */
+  private findDelegationPath(from: string, to: string): string | null {
+    const fromCfg = this.agentManager.getConfig(from);
+    if (!fromCfg) return null;
+
+    let cursor: string | null = to;
+    const visited = new Set<string>();
+    while (cursor && !visited.has(cursor)) {
+      visited.add(cursor);
+      if (cursor !== from && fromCfg.directReports.includes(cursor)) return cursor;
+      const cursorCfg = this.agentManager.getConfig(cursor);
+      cursor = cursorCfg?.reportsTo ?? null;
+    }
+    return null;
+  }
+
+  /**
+   * Reject a hierarchy-violating route. Two side effects:
+   * 1) Push the feedback onto the sender's pending-feedback queue, so the
+   *    next time that AgentProcess instance is invoked the orchestrator
+   *    prepends a system reminder to the prompt. (Required because claude -p
+   *    cannot accept input mid-stream — feedback must wait for the next turn.)
+   * 2) Emit a `system → sender` feedback message via the message bus so the
+   *    rejection appears in the live GUI feed immediately.
+   */
+  private rejectIllegalRoute(message: AgentMessage): void {
+    const intermediary = this.findDelegationPath(message.from, message.to);
+    const advice = intermediary
+      ? `${message.to} reports up through ${intermediary}. Send your request to ${intermediary} and let them delegate.`
+      : `${message.to} is not in your chain of command. Route through your supervisor instead.`;
+
+    logger.warn(
+      SCOPE,
+      `Blocked illegal route ${message.from} → ${message.to}; advising via ${intermediary ?? "supervisor"}`
+    );
+
+    const senderInstance = this.agentManager.getAgent(message.from);
+    if (senderInstance) {
+      senderInstance.appendFeedback(
+        `Your previous attempt to send a HIVEMIND message to "${message.to}" was REJECTED by the orchestrator. ${advice} Original subject: "${message.subject}". Re-send via the correct intermediary.`
+      );
+    }
+
+    this.messageBus.send({
+      from: "system",
+      to: message.from,
+      type: "feedback",
+      priority: "high",
+      subject: `Routing rejected: cannot message ${message.to} directly`,
+      body: [
+        advice,
+        "",
+        `Original subject: ${message.subject}`,
+        `Original body:`,
+        message.body,
+      ].join("\n"),
+      parentMessageId: message.id,
+    });
   }
 
   private bindEvents(): void {

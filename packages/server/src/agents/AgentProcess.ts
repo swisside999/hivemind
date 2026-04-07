@@ -1,13 +1,38 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { logger } from "../utils/logger.js";
-import type { AgentConfig, AgentModel, AgentStatus } from "./types.js";
+import type { AgentConfig, AgentModel, AgentRole, AgentStatus } from "./types.js";
 import type { AgentMessage } from "../orchestrator/types.js";
 
 const SCOPE = "AgentProcess";
 
 const HIVEMIND_MSG_START = "[HIVEMIND:MESSAGE]";
 const HIVEMIND_MSG_END = "[/HIVEMIND:MESSAGE]";
+
+// Per-role tool whitelist passed to `claude --tools`.
+// `""` = no built-in tools (pure delegation via HIVEMIND messages).
+// `null` = omit the flag entirely (default = all tools).
+// Verified against claude 2.1.92: `--tools ""` truly disables built-in tools;
+// `--allowed-tools ""` does NOT (it's treated as "no restriction").
+const TOOLS_BY_ROLE: Record<AgentRole, string | null> = {
+  ceo: "",
+  cto: "",
+  cpo: "",
+  coo: "",
+  "senior-dev": "Read,Grep,Glob,Edit,Write,Bash,WebFetch,WebSearch",
+  "junior-dev": "Read,Grep,Glob,Edit,Write,Bash",
+  designer: "Read,Grep,Glob,Edit,Write,WebFetch,WebSearch",
+  devops: "Read,Grep,Glob,Edit,Write,Bash",
+  // Code reviewers need Bash to actually run typecheck/tests when verifying
+  // claims, but no Edit/Write — review only.
+  "code-reviewer": "Read,Grep,Glob,Bash",
+  "design-reviewer": "Read,Grep,Glob",
+  qa: "Read,Grep,Glob,Bash",
+  // Custom role defaults to read-only — safer than granting unrestricted
+  // tools to user-defined agents. Operators can widen this in future via a
+  // per-agent config field.
+  custom: "Read,Grep,Glob",
+};
 
 export interface AgentProcessEvents {
   message: [AgentMessage];
@@ -26,6 +51,14 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   private status: AgentStatus = "idle";
   private workingDirectory: string;
   private modelOverride?: AgentModel;
+  // When set, the next claude spawn passes --resume to continue this conversation.
+  // Captured from the first stream-json system init message; cleared on resume failure.
+  private currentSessionId: string | null = null;
+  private stderrBuffer = "";
+  // System-generated reminders (e.g. routing rejections) queued to inject into
+  // this agent's NEXT turn. Cleared after each delivery. Used by the
+  // orchestrator to teach an agent it sent an illegal HIVEMIND message.
+  private pendingFeedback: string[] = [];
   sharedMemory: string = "";
 
   constructor(config: AgentConfig, workingDirectory: string) {
@@ -40,6 +73,24 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
 
   getActiveModel(): AgentModel {
     return this.modelOverride ?? this.config.model;
+  }
+
+  getCurrentSessionId(): string | null {
+    return this.currentSessionId;
+  }
+
+  resetSession(): void {
+    this.currentSessionId = null;
+  }
+
+  /**
+   * Queue a system reminder (e.g. routing rejection feedback) to be prepended
+   * to this agent's next prompt. Used by the orchestrator's hierarchy
+   * enforcement to deliver feedback that would otherwise be lost — claude -p
+   * cannot accept input mid-stream, so we wait until the next turn.
+   */
+  appendFeedback(reminder: string): void {
+    this.pendingFeedback.push(reminder);
   }
 
   getStatus(): AgentStatus {
@@ -88,8 +139,11 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       }
       this.fullText = "";
       this.outputBuffer = "";
+      this.stderrBuffer = "";
 
-      this.process = spawn("claude", this.buildArgs(prompt), {
+      const wasResuming = this.currentSessionId !== null;
+      const finalPrompt = this.consumePendingFeedback(prompt);
+      this.process = spawn("claude", this.buildArgs(finalPrompt), {
         cwd: this.workingDirectory,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...process.env },
@@ -100,16 +154,23 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
         this.processOutput(chunk.toString());
       });
       this.process.stderr?.on("data", (chunk: Buffer) => {
-        logger.debug(SCOPE, `[${this.config.name} stderr] ${chunk.toString().trim()}`);
+        this.appendStderr(chunk.toString());
       });
       this.process.on("close", (code) => {
         this.setStatus("idle");
         this.process = null;
         if (code === 0) {
           resolve(this.stripHivemindMessages(this.fullText));
-        } else {
-          reject(new Error(`Agent ${this.config.name} exited with code ${code}`));
+          return;
         }
+        // If a resume failed (e.g. session expired), drop the session ID so the
+        // next call starts fresh. Don't auto-retry — surface the error so the
+        // caller can decide.
+        if (wasResuming && this.looksLikeResumeFailure(code)) {
+          logger.warn(SCOPE, `Agent ${this.config.name} resume failed (exit ${code}); clearing session ${this.currentSessionId}`);
+          this.currentSessionId = null;
+        }
+        reject(new Error(`Agent ${this.config.name} exited with code ${code}`));
       });
       this.process.on("error", (err) => {
         this.setStatus("error");
@@ -117,6 +178,40 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
         reject(err);
       });
     });
+  }
+
+  private looksLikeResumeFailure(exitCode: number | null): boolean {
+    if (exitCode === 0) return false;
+    const stderr = this.stderrBuffer.toLowerCase();
+    return stderr.includes("session") && (stderr.includes("not found") || stderr.includes("expired") || stderr.includes("invalid"));
+  }
+
+  private consumePendingFeedback(prompt: string): string {
+    if (this.pendingFeedback.length === 0) return prompt;
+    const reminders = this.pendingFeedback
+      .map((r, i) => `${i + 1}. ${r}`)
+      .join("\n");
+    this.pendingFeedback = [];
+    return [
+      "[SYSTEM REMINDER — read carefully before responding]",
+      "Since your previous turn, the orchestrator delivered the following feedback to you:",
+      "",
+      reminders,
+      "",
+      "[End system reminder. The user's actual message follows below.]",
+      "",
+      prompt,
+    ].join("\n");
+  }
+
+  private appendStderr(text: string): void {
+    this.stderrBuffer += text;
+    // Cap stderr buffer to avoid unbounded growth on chatty CLI sessions.
+    // Keep the most recent half — that's what looksLikeResumeFailure cares about.
+    if (this.stderrBuffer.length > 16384) {
+      this.stderrBuffer = this.stderrBuffer.slice(-8192);
+    }
+    logger.debug(SCOPE, `[${this.config.name} stderr] ${text.trim()}`);
   }
 
   private stripHivemindMessages(text: string): string {
@@ -171,15 +266,33 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
 
   private buildArgs(prompt: string): string[] {
     const model = this.resolveModelFlag();
-    return [
+    const args = [
       "-p",
       "--output-format", "stream-json",
       "--verbose",
       "--model", model,
       "--system-prompt", this.buildSystemPrompt(),
       "--dangerously-skip-permissions",
-      prompt,
     ];
+
+    // Per-role tool restriction. Pure-delegation roles (CEO/CTO/CPO/COO)
+    // get an empty whitelist so they cannot Read/Edit/Bash — they must
+    // delegate via HIVEMIND messages.
+    const toolList = TOOLS_BY_ROLE[this.config.role];
+    if (toolList !== null) {
+      args.push("--tools", toolList);
+    }
+
+    // Resume conversation when this AgentProcess instance has a captured
+    // session id (set by processStreamLine on the first system init).
+    // Verified: --resume preserves prior turns; --system-prompt must still be
+    // re-passed because the CLI does not retain it across resumed sessions.
+    if (this.currentSessionId) {
+      args.push("--resume", this.currentSessionId);
+    }
+
+    args.push(prompt);
+    return args;
   }
 
   private resolveModelFlag(): string {
@@ -200,7 +313,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
     });
 
     this.process.stderr?.on("data", (chunk: Buffer) => {
-      logger.debug(SCOPE, `[${this.config.name} stderr] ${chunk.toString().trim()}`);
+      this.appendStderr(chunk.toString());
     });
 
     this.process.on("close", (code) => {
@@ -229,6 +342,7 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
   private processStreamLine(line: string): void {
     try {
       const obj = JSON.parse(line) as Record<string, unknown>;
+      this.captureSessionId(obj);
       const textDelta = this.extractTextDelta(obj);
       if (textDelta) {
         this.fullText += textDelta;
@@ -239,6 +353,19 @@ export class AgentProcess extends EventEmitter<AgentProcessEvents> {
       // Non-JSON line fallback
       this.fullText += line;
       this.emit("thought", line);
+    }
+  }
+
+  private captureSessionId(obj: Record<string, unknown>): void {
+    // Only capture from the system init event, and only if we don't already
+    // have one. This pins the session id for the lifetime of the AgentProcess
+    // instance so subsequent turns resume the same conversation.
+    if (this.currentSessionId !== null) return;
+    if (obj.type !== "system" || obj.subtype !== "init") return;
+    const sid = obj.session_id;
+    if (typeof sid === "string" && sid.length > 0) {
+      this.currentSessionId = sid;
+      logger.debug(SCOPE, `Captured session id for ${this.config.name}: ${sid}`);
     }
   }
 
