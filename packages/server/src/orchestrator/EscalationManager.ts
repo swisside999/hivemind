@@ -51,6 +51,10 @@ export class EscalationManager extends EventEmitter<EscalationEvents> {
     return this.pending.get(id);
   }
 
+  clearAll(): void {
+    this.pending.clear();
+  }
+
   private buildDefaultOptions(message: AgentMessage): EscalationOption[] {
     if (message.type === "review_request") {
       return [

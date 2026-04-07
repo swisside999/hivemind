@@ -52,6 +52,14 @@ async function main(): Promise<void> {
     }
   }
 
+  const deps = {
+    orchestrator,
+    projectManager,
+    memoryManager,
+    ticketManager,
+    wsManager: null as import("./routes/ws.js").WsManager | null,
+  };
+
   const app = express();
   app.use(express.json());
 
@@ -66,14 +74,15 @@ async function main(): Promise<void> {
     next();
   });
 
-  app.use("/api", createApiRouter({ orchestrator, projectManager, memoryManager, ticketManager }));
+  app.use("/api", createApiRouter(deps));
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", version: "0.1.0" });
   });
 
   const server = createServer(app);
-  createWebSocketServer(server, orchestrator, ticketManager);
+  const wsManager = createWebSocketServer(server, deps);
+  deps.wsManager = wsManager;
 
   server.listen(config.port, "127.0.0.1", () => {
     logger.info(SCOPE, `Hivemind server running on http://127.0.0.1:${config.port}`);

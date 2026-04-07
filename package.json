@@ -5,11 +5,11 @@
   "description": "Orchestrate multiple Claude Code CLI sessions as a virtual software company",
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --filter @hivemind/server dev",
-    "dev:web": "pnpm --filter @hivemind/web dev",
+    "dev": "pnpm --filter ./packages/server dev",
+    "dev:web": "pnpm --filter ./packages/web dev",
     "build": "pnpm -r build",
-    "build:server": "pnpm --filter @hivemind/server build",
-    "build:web": "pnpm --filter @hivemind/web build",
+    "build:server": "pnpm --filter ./packages/server build",
+    "build:web": "pnpm --filter ./packages/web build",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r clean"
   },

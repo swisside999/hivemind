@@ -40,8 +40,20 @@ export function useProject() {
   }, [fetchProjects, activeProject, setActiveProject]);
 
   const selectProject = useCallback(async (name: string) => {
-    await fetch(`/api/projects/${encodeURIComponent(name)}`);
-    setActiveProject(name);
+    try {
+      const res = await fetch("/api/projects/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      setActiveProject(name);
+    } catch (err) {
+      console.error("Failed to switch project:", err);
+    }
   }, [setActiveProject]);
 
   return { projects, activeProject, fetchProjects, createProject, deleteProject, selectProject };

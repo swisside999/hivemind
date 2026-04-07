@@ -22,6 +22,19 @@ export interface ModelSelectionInfo {
   defaultModel: string;
 }
 
+export interface AgentMetricsEntry {
+  invocations: number;
+  totalResponseTimeMs: number;
+  successCount: number;
+  errorCount: number;
+  lastInvoked: string;
+  messagesRouted: number;
+}
+
+export interface AgentMetricsOutput extends Omit<AgentMetricsEntry, "totalResponseTimeMs"> {
+  avgResponseTimeMs: number;
+}
+
 export interface OrchestratorEvents {
   agentThought: [string, string];
   agentChunk: [string, string];
@@ -31,20 +44,23 @@ export interface OrchestratorEvents {
   messageRouted: [AgentMessage];
   escalation: [EscalationRequest];
   escalationResolved: [EscalationRequest];
+  metricsUpdate: [Record<string, AgentMetricsOutput>];
   error: [string, Error];
 }
 
 export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   readonly messageBus: MessageBus;
   readonly escalationManager: EscalationManager;
-  readonly agentManager: AgentManager;
+  agentManager: AgentManager;
   private workingDirectory: string;
   ticketManager: TicketManager | null = null;
   sharedMemoryContent: string = "";
   private usageStats = new Map<string, { invocations: number; lastInvoked: string }>();
+  private agentMetrics = new Map<string, AgentMetricsEntry>();
   private boundAgents = new Set<string>();
   private commitLock: Promise<void> = Promise.resolve();
   private ticketManagerConnected = false;
+  private ticketRoutedHandler: ((message: AgentMessage) => void) | null = null;
 
   constructor(workingDirectory: string) {
     super();
@@ -79,11 +95,14 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.bindAgentEvents(agentName, agent);
     this.trackUsage(agentName);
 
+    const startTime = Date.now();
     try {
       const response = await agent.startConversation(userMessage);
+      this.recordMetricsSuccess(agentName, Date.now() - startTime);
       await this.handleAgentCommit(agentName, userMessage.slice(0, 72));
       return this.stripHivemindMessages(response);
     } catch (err) {
+      this.recordMetricsError(agentName, Date.now() - startTime);
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error(SCOPE, `Agent ${agentName} failed`, error);
       this.emit("error", agentName, error);
@@ -102,6 +121,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     if (message.to === "broadcast") {
       this.messageBus.routeExistingMessage(message);
       this.emit("messageRouted", message);
+      this.incrementMessagesRouted(message.from);
       return;
     }
 
@@ -113,6 +133,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
     this.messageBus.routeExistingMessage(message);
     this.emit("messageRouted", message);
+    this.incrementMessagesRouted(message.to);
 
     const prompt = this.formatIncomingMessage(message);
     const agent = this.agentManager.createAgent(message.to);
@@ -126,12 +147,15 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.trackUsage(message.to);
     this.bindAgentEvents(message.to, agent);
 
+    const routeStartTime = Date.now();
     try {
       const response = await agent.startConversation(prompt);
+      this.recordMetricsSuccess(message.to, Date.now() - routeStartTime);
       logger.debug(SCOPE, `Agent ${message.to} responded: ${response.slice(0, 200)}`);
       const ticketId = message.context?.ticketId as string | undefined;
       await this.handleAgentCommit(message.to, message.subject.slice(0, 72), ticketId);
     } catch (err) {
+      this.recordMetricsError(message.to, Date.now() - routeStartTime);
       const error = err instanceof Error ? err : new Error(String(err));
       logger.error(SCOPE, `Failed to deliver message to ${message.to}`, error);
       this.emit("error", message.to, error);
@@ -168,9 +192,10 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.ticketManager = ticketManager;
     if (!this.ticketManagerConnected) {
       this.ticketManagerConnected = true;
-      this.on("messageRouted", (message) => {
+      this.ticketRoutedHandler = (message) => {
         this.handleTicketFromMessage(message);
-      });
+      };
+      this.on("messageRouted", this.ticketRoutedHandler);
     }
     logger.info(SCOPE, "TicketManager connected");
   }
@@ -183,6 +208,22 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     return Object.fromEntries(this.usageStats);
   }
 
+  getMetrics(): Record<string, AgentMetricsOutput> {
+    const output: Record<string, AgentMetricsOutput> = {};
+    for (const [agent, entry] of this.agentMetrics) {
+      const totalCalls = entry.successCount + entry.errorCount;
+      output[agent] = {
+        invocations: entry.invocations,
+        avgResponseTimeMs: totalCalls > 0 ? Math.round(entry.totalResponseTimeMs / totalCalls) : 0,
+        successCount: entry.successCount,
+        errorCount: entry.errorCount,
+        lastInvoked: entry.lastInvoked,
+        messagesRouted: entry.messagesRouted,
+      };
+    }
+    return output;
+  }
+
   shutdown(): void {
     logger.info(SCOPE, "Shutting down orchestrator");
     this.agentManager.stopAll();
@@ -190,11 +231,74 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.boundAgents.clear();
   }
 
+  reset(): void {
+    this.shutdown();
+    if (this.ticketRoutedHandler) {
+      this.off("messageRouted", this.ticketRoutedHandler);
+      this.ticketRoutedHandler = null;
+    }
+    this.ticketManager = null;
+    this.ticketManagerConnected = false;
+    this.sharedMemoryContent = "";
+    this.usageStats.clear();
+    this.agentMetrics.clear();
+    this.commitLock = Promise.resolve();
+    this.escalationManager.clearAll();
+    logger.info(SCOPE, "Orchestrator reset for project switch");
+  }
+
+  updateWorkingDirectory(workingDirectory: string): void {
+    this.workingDirectory = workingDirectory;
+    this.agentManager = new AgentManager(workingDirectory);
+  }
+
   private trackUsage(agentName: string): void {
     const existing = this.usageStats.get(agentName) ?? { invocations: 0, lastInvoked: "" };
     existing.invocations += 1;
     existing.lastInvoked = new Date().toISOString();
     this.usageStats.set(agentName, existing);
+  }
+
+  private getOrCreateMetrics(agentName: string): AgentMetricsEntry {
+    const existing = this.agentMetrics.get(agentName);
+    if (existing) return existing;
+    const fresh: AgentMetricsEntry = {
+      invocations: 0,
+      totalResponseTimeMs: 0,
+      successCount: 0,
+      errorCount: 0,
+      lastInvoked: "",
+      messagesRouted: 0,
+    };
+    this.agentMetrics.set(agentName, fresh);
+    return fresh;
+  }
+
+  private recordMetricsSuccess(agentName: string, responseTimeMs: number): void {
+    const metrics = this.getOrCreateMetrics(agentName);
+    metrics.invocations += 1;
+    metrics.totalResponseTimeMs += responseTimeMs;
+    metrics.successCount += 1;
+    metrics.lastInvoked = new Date().toISOString();
+    this.emitMetricsUpdate();
+  }
+
+  private recordMetricsError(agentName: string, responseTimeMs: number): void {
+    const metrics = this.getOrCreateMetrics(agentName);
+    metrics.invocations += 1;
+    metrics.totalResponseTimeMs += responseTimeMs;
+    metrics.errorCount += 1;
+    metrics.lastInvoked = new Date().toISOString();
+    this.emitMetricsUpdate();
+  }
+
+  private incrementMessagesRouted(agentName: string): void {
+    const metrics = this.getOrCreateMetrics(agentName);
+    metrics.messagesRouted += 1;
+  }
+
+  private emitMetricsUpdate(): void {
+    this.emit("metricsUpdate", this.getMetrics());
   }
 
   private handleTicketFromMessage(message: AgentMessage): void {

@@ -8,6 +8,7 @@ import type {
   AgentMessage,
   Ticket,
   TicketEvent,
+  AgentMetrics,
 } from "../types/index.js";
 
 interface ActiveConnection {
@@ -107,12 +108,12 @@ interface AppState {
   setConnected: (connected: boolean) => void;
 
   // Tickets
-  activeView: "floor" | "tickets" | "wiki" | "settings";
+  activeView: "floor" | "tickets" | "wiki" | "settings" | "metrics";
   tickets: Ticket[];
   selectedTicket: string | null;
   showTicketDetail: boolean;
   showNewTicket: boolean;
-  setActiveView: (view: "floor" | "tickets" | "wiki" | "settings") => void;
+  setActiveView: (view: "floor" | "tickets" | "wiki" | "settings" | "metrics") => void;
 
   // Shared memory (company wiki)
   sharedMemory: string;
@@ -121,6 +122,10 @@ interface AppState {
   // Usage stats
   usageStats: Record<string, { invocations: number; lastInvoked: string }>;
   setUsageStats: (stats: Record<string, { invocations: number; lastInvoked: string }>) => void;
+
+  // Performance metrics
+  agentMetrics: Record<string, AgentMetrics>;
+  setAgentMetrics: (metrics: Record<string, AgentMetrics>) => void;
 
   // Settings
   settings: {
@@ -285,7 +290,7 @@ export const useAppStore = create<AppState>((set) => ({
   connected: false,
   setConnected: (connected) => set({ connected }),
 
-  activeView: (localStorage.getItem(STORAGE_KEY_VIEW) as "floor" | "tickets" | "wiki" | "settings") ?? "floor",
+  activeView: (localStorage.getItem(STORAGE_KEY_VIEW) as "floor" | "tickets" | "wiki" | "settings" | "metrics") ?? "floor",
   tickets: [],
   selectedTicket: null,
   showTicketDetail: false,
@@ -318,6 +323,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   usageStats: {},
   setUsageStats: (stats) => set({ usageStats: stats }),
+
+  agentMetrics: {},
+  setAgentMetrics: (metrics) => set({ agentMetrics: metrics }),
 
   settings: {
     defaultModel: "sonnet",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAppStore } from "../stores/appStore.js";
-import type { AgentConfig, AgentState, AgentMessage, AgentModel, EscalationRequest, ModelSelectionInfo, Ticket, TicketEvent } from "../types/index.js";
+import type { AgentConfig, AgentState, AgentMessage, AgentModel, EscalationRequest, ModelSelectionInfo, Ticket, TicketEvent, AgentMetrics } from "../types/index.js";
 import { sendNotification } from "../utils/notifications.js";
 import { playMessageReceived, playEscalation, playAgentActive, playTaskComplete, playTicketCreated, playError } from "../utils/sounds.js";
 
@@ -28,6 +28,7 @@ export function useWebSocket() {
     addTicketEvent,
     setSharedMemory,
     setUsageStats,
+    setAgentMetrics,
     appendStreamingText,
     clearStreamingText,
     addFeedMessage,
@@ -203,6 +204,16 @@ export function useWebSocket() {
       }
       case "usage:stats": {
         setUsageStats(payload as Record<string, { invocations: number; lastInvoked: string }>);
+        break;
+      }
+      case "metrics:all":
+      case "metrics:update": {
+        setAgentMetrics(payload as Record<string, AgentMetrics>);
+        break;
+      }
+      case "project:active": {
+        const { name } = payload as { name: string | null };
+        useAppStore.getState().setActiveProject(name);
         break;
       }
       case "settings:current": {

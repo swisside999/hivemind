@@ -1,18 +1,42 @@
 {
-  "name": "@hivemind/server",
+  "name": "hivemind-ai",
   "version": "0.1.0",
-  "private": true,
+  "description": "Orchestrate multiple Claude Code CLI sessions as a virtual software company",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "hivemind": "dist/cli/index.js"
+  },
+  "files": [
+    "dist/",
+    "templates/"
+  ],
+  "keywords": [
+    "claude-code",
+    "ai-agents",
+    "multi-agent",
+    "typescript",
+    "developer-tools",
+    "orchestration"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swisside999/hivemind.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/swisside999/hivemind",
+  "bugs": "https://github.com/swisside999/hivemind/issues",
+  "engines": {
+    "node": ">=20.0.0"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "express": "^5.1.0",

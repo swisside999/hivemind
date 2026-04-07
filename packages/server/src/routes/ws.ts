@@ -2,17 +2,28 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "node:http";
 import type { Orchestrator } from "../orchestrator/Orchestrator.js";
 import type { TicketManager } from "../tickets/TicketManager.js";
+import type { ProjectManager } from "../projects/ProjectManager.js";
+import type { MemoryManager } from "../memory/MemoryManager.js";
 import { logger } from "../utils/logger.js";
 import { getRuntimeSettings } from "./api.js";
 
 const SCOPE = "WebSocket";
 
-interface WsMessage {
-  type: string;
-  payload: unknown;
+interface WsDeps {
+  orchestrator: Orchestrator;
+  projectManager: ProjectManager;
+  memoryManager: MemoryManager | null;
+  ticketManager: TicketManager | null;
 }
 
-export function createWebSocketServer(server: Server, orchestrator: Orchestrator, ticketManager?: TicketManager | null): WebSocketServer {
+export interface WsManager {
+  wss: WebSocketServer;
+  broadcastFullState: () => void;
+  rebindOrchestrator: (orchestrator: Orchestrator) => void;
+  rebindTicketManager: (ticketManager: TicketManager | null) => void;
+}
+
+export function createWebSocketServer(server: Server, deps: WsDeps): WsManager {
   const wss = new WebSocketServer({
     server,
     verifyClient: ({ origin }: { origin?: string }) => {
@@ -30,43 +41,87 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
     }
   }
 
-  orchestrator.on("agentThought", (agentName, thought) => {
-    broadcast("agent:thought", { agent: agentName, thought });
-  });
+  function sendFullState(ws: WebSocket): void {
+    const state = deps.orchestrator.getState();
+    ws.send(JSON.stringify({ type: "state:full", payload: state }));
 
-  orchestrator.on("agentStatusChange", (agentName, status) => {
-    broadcast("agent:status", { agent: agentName, status });
-  });
+    const configs = deps.orchestrator.agentManager.getAllConfigs();
+    ws.send(JSON.stringify({ type: "agents:configs", payload: configs }));
 
-  orchestrator.on("agentChunk", (agentName, delta) => {
-    broadcast("agent:chunk", { agent: agentName, delta });
-  });
+    if (deps.ticketManager) {
+      ws.send(JSON.stringify({ type: "tickets:all", payload: deps.ticketManager.getAll() }));
+    } else {
+      ws.send(JSON.stringify({ type: "tickets:all", payload: [] }));
+    }
 
-  orchestrator.on("agentCommit", (agentName, commitData) => {
-    broadcast("agent:commit", { agent: agentName, ...commitData });
-  });
+    ws.send(JSON.stringify({ type: "usage:stats", payload: deps.orchestrator.getUsageStats() }));
+    ws.send(JSON.stringify({ type: "metrics:all", payload: deps.orchestrator.getMetrics() }));
+    ws.send(JSON.stringify({ type: "settings:current", payload: getRuntimeSettings() }));
 
-  orchestrator.on("modelSelection", (info) => {
-    broadcast("agent:model", info);
-  });
+    const activeProject = deps.projectManager.getActiveProject();
+    ws.send(JSON.stringify({ type: "project:active", payload: { name: activeProject } }));
+  }
 
-  orchestrator.on("messageRouted", (message) => {
-    broadcast("message:routed", message);
-  });
+  function broadcastFullState(): void {
+    for (const client of wss.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        sendFullState(client);
+      }
+    }
+  }
 
-  orchestrator.on("escalation", (escalation) => {
-    broadcast("escalation:new", escalation);
-  });
+  function bindOrchestratorEvents(orchestrator: Orchestrator): void {
+    orchestrator.on("agentThought", (agentName, thought) => {
+      broadcast("agent:thought", { agent: agentName, thought });
+    });
 
-  orchestrator.on("escalationResolved", (escalation) => {
-    broadcast("escalation:resolved", escalation);
-  });
+    orchestrator.on("agentStatusChange", (agentName, status) => {
+      broadcast("agent:status", { agent: agentName, status });
+    });
 
-  orchestrator.on("error", (agentName, error) => {
-    broadcast("agent:error", { agent: agentName, error: error.message });
-  });
+    orchestrator.on("agentChunk", (agentName, delta) => {
+      broadcast("agent:chunk", { agent: agentName, delta });
+    });
 
-  if (ticketManager) {
+    orchestrator.on("agentCommit", (agentName, commitData) => {
+      broadcast("agent:commit", { agent: agentName, ...commitData });
+    });
+
+    orchestrator.on("modelSelection", (info) => {
+      broadcast("agent:model", info);
+    });
+
+    orchestrator.on("messageRouted", (message) => {
+      broadcast("message:routed", message);
+    });
+
+    orchestrator.on("escalation", (escalation) => {
+      broadcast("escalation:new", escalation);
+    });
+
+    orchestrator.on("escalationResolved", (escalation) => {
+      broadcast("escalation:resolved", escalation);
+    });
+
+    orchestrator.on("error", (agentName, error) => {
+      broadcast("agent:error", { agent: agentName, error: error.message });
+    });
+
+    orchestrator.on("metricsUpdate", (metrics) => {
+      broadcast("metrics:update", metrics);
+    });
+  }
+
+  let currentTicketManager: TicketManager | null = null;
+
+  function bindTicketManagerEvents(ticketManager: TicketManager): void {
+    if (currentTicketManager && currentTicketManager !== ticketManager) {
+      currentTicketManager.removeAllListeners("ticket:created");
+      currentTicketManager.removeAllListeners("ticket:updated");
+      currentTicketManager.removeAllListeners("ticket:event");
+    }
+    currentTicketManager = ticketManager;
+
     ticketManager.on("ticket:created", (ticket) => {
       broadcast("ticket:created", ticket);
     });
@@ -80,34 +135,28 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
     });
   }
 
+  // Initial bindings
+  bindOrchestratorEvents(deps.orchestrator);
+  if (deps.ticketManager) {
+    bindTicketManagerEvents(deps.ticketManager);
+  }
+
   wss.on("connection", (ws) => {
     logger.info(SCOPE, "Client connected");
 
-    const state = orchestrator.getState();
-    ws.send(JSON.stringify({ type: "state:full", payload: state }));
-
-    const configs = orchestrator.agentManager.getAllConfigs();
-    ws.send(JSON.stringify({ type: "agents:configs", payload: configs }));
-
-    if (ticketManager) {
-      ws.send(JSON.stringify({ type: "tickets:all", payload: ticketManager.getAll() }));
-    }
-
-    ws.send(JSON.stringify({ type: "usage:stats", payload: orchestrator.getUsageStats() }));
-
-    ws.send(JSON.stringify({ type: "settings:current", payload: getRuntimeSettings() }));
+    sendFullState(ws);
 
     ws.on("message", async (data) => {
       try {
-        const parsed = JSON.parse(data.toString()) as WsMessage;
+        const parsed = JSON.parse(data.toString()) as { type: string; payload: unknown };
 
         if (parsed.type === "message:send") {
           const { agent, message } = parsed.payload as { agent: string; message: string };
-          const response = await orchestrator.sendUserMessage(agent, message);
+          const response = await deps.orchestrator.sendUserMessage(agent, message);
           ws.send(JSON.stringify({ type: "message:response", payload: { agent, response } }));
         } else if (parsed.type === "escalation:resolve") {
           const { id, resolution } = parsed.payload as { id: string; resolution: string };
-          orchestrator.resolveEscalation(id, resolution);
+          deps.orchestrator.resolveEscalation(id, resolution);
         }
       } catch (err) {
         logger.error(SCOPE, "Failed to handle WS message", err);
@@ -121,5 +170,22 @@ export function createWebSocketServer(server: Server, orchestrator: Orchestrator
   });
 
   logger.info(SCOPE, "WebSocket server attached to HTTP server");
-  return wss;
+
+  return {
+    wss,
+    broadcastFullState,
+    rebindOrchestrator(orchestrator: Orchestrator) {
+      bindOrchestratorEvents(orchestrator);
+    },
+    rebindTicketManager(ticketManager: TicketManager | null) {
+      if (ticketManager) {
+        bindTicketManagerEvents(ticketManager);
+      } else if (currentTicketManager) {
+        currentTicketManager.removeAllListeners("ticket:created");
+        currentTicketManager.removeAllListeners("ticket:updated");
+        currentTicketManager.removeAllListeners("ticket:event");
+        currentTicketManager = null;
+      }
+    },
+  };
 }

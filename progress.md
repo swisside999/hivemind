@@ -62,7 +62,7 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 
 ### Phase 6: Skills & Intelligence
 - [ ] Skill system — agents invoke superpowers, design-md, and custom skills (visible on floor)
-- [ ] Intelligent model selection — auto-pick opus/sonnet/haiku per task complexity
+- [x] Intelligent model selection — auto-pick opus/sonnet/haiku per task complexity (feature-flagged)
 - [ ] Session usage awareness — display limits, auto-resume on reset
 - [ ] Autonomous operation mode — continuous work with minimal user intervention
 
@@ -76,7 +76,7 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [x] .env.example with documented config options
 - [x] README rewrite with compelling intro, architecture diagram, full API docs
 - [ ] Demo GIF/video showing the full workflow
-- [ ] npm package: `npx hivemind-ai init` quick start
+- [x] npm package prep: `hivemind-ai` package configured for `npx hivemind-ai` (pending publish)
 - [ ] Publish as a plugin/skill on buildwithclaude.com (497+ extension marketplace)
 - [ ] Landing page / docs site
 
@@ -87,15 +87,15 @@ Phase 5: Tier 1 Complete — preparing for open source launch
 - [ ] Git worktree isolation per agent (inspired by ClawTeam's approach)
 - [ ] Built-in observability console (inspired by VoltAgent's VoltOps)
 - [ ] TEAM.md convention — markdown team config files (inspired by awesome-design-md)
-- [ ] Multi-project hot-switching without restart
-- [ ] Settings panel (model config, API keys, themes)
+- [x] Multi-project hot-switching without restart (POST /api/projects/switch + sidebar wiring)
+- [x] Settings panel (model config, auto-commit, log level, intelligent selection toggle)
 - [ ] MCP protocol support for tool integration
 
 ### Tier 2 Features (Backlog)
 - [ ] Agent XP & leveling system (pixel art evolves with experience)
-- [ ] Sound effects (8-bit bleeps for events)
+- [x] Sound effects (8-bit Web Audio API bleeps for 7 event types)
 - [ ] Achievement system with pixel art badges
-- [ ] Desktop notifications for escalations
+- [x] Desktop notifications for escalations and agent errors
 - [ ] Floor theme customization (office, space station, castle)
-- [ ] Agent performance metrics and analytics dashboard
-- [ ] Export conversation/decision logs
+- [x] Agent performance metrics and analytics dashboard (METRICS view with per-agent cards)
+- [x] Export conversation/decision logs (JSON download from settings panel)

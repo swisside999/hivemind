@@ -68,11 +68,14 @@ interface ApiDeps {
   projectManager: ProjectManager;
   memoryManager: MemoryManager | null;
   ticketManager: TicketManager | null;
+  wsManager: import("./ws.js").WsManager | null;
 }
 
 export function createApiRouter(deps: ApiDeps): Router {
   const router = Router();
-  const { orchestrator, projectManager, ticketManager } = deps;
+  const { orchestrator, projectManager } = deps;
+  // Note: ticketManager and memoryManager intentionally NOT destructured.
+  // They are mutated on project switch — always read via deps.ticketManager / deps.memoryManager.
 
   // --- Projects ---
 
@@ -122,6 +125,50 @@ export function createApiRouter(deps: ApiDeps): Router {
       res.json({ deleted: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete project";
+      res.status(400).json({ error: message });
+    }
+  });
+
+  router.post("/projects/switch", async (req: Request, res: Response) => {
+    try {
+      const { name } = req.body as { name?: string };
+      if (!name || typeof name !== "string") {
+        res.status(400).json({ error: "name is required" });
+        return;
+      }
+
+      const projectConfig = await projectManager.load(name);
+      const agentDir = projectManager.getAgentDir(name);
+
+      const { MemoryManager } = await import("../memory/MemoryManager.js");
+      const { TicketManager } = await import("../tickets/TicketManager.js");
+      const { resolve } = await import("node:path");
+
+      deps.orchestrator.reset();
+      deps.orchestrator.updateWorkingDirectory(projectConfig.workingDirectory);
+      await deps.orchestrator.initialize(agentDir);
+
+      const newMemoryManager = new MemoryManager(agentDir);
+      const newTicketManager = new TicketManager(resolve(projectManager.getProjectDir(name), ".hivemind"));
+      await newTicketManager.load();
+
+      deps.memoryManager = newMemoryManager;
+      deps.ticketManager = newTicketManager;
+
+      deps.orchestrator.connectTicketManager(newTicketManager);
+      const sharedMem = await newMemoryManager.readSharedMemory();
+      deps.orchestrator.setSharedMemory(sharedMem);
+
+      if (deps.wsManager) {
+        deps.wsManager.rebindTicketManager(newTicketManager);
+        deps.wsManager.broadcastFullState();
+      }
+
+      logger.info(SCOPE, `Switched active project to: ${name}`);
+      res.json({ project: projectConfig });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to switch project";
+      logger.error(SCOPE, message, err);
       res.status(400).json({ error: message });
     }
   });
@@ -196,20 +243,22 @@ export function createApiRouter(deps: ApiDeps): Router {
   // --- Tickets ---
 
   router.get("/tickets", (req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
     const { status, assignedTo } = req.query as { status?: string; assignedTo?: string };
-    const tickets = ticketManager.getFiltered(
-      status as Parameters<typeof ticketManager.getFiltered>[0],
+    const tickets = tm.getFiltered(
+      status as Parameters<typeof tm.getFiltered>[0],
       assignedTo
     );
     res.json({ tickets });
   });
 
   router.post("/tickets", (req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
@@ -223,10 +272,10 @@ export function createApiRouter(deps: ApiDeps): Router {
       res.status(400).json({ error: "title is required" });
       return;
     }
-    const ticket = ticketManager.create({
+    const ticket = tm.create({
       title,
       description,
-      priority: (priority as Parameters<typeof ticketManager.create>[0]["priority"]) ?? "normal",
+      priority: (priority as Parameters<typeof tm.create>[0]["priority"]) ?? "normal",
       createdBy: "user",
       assignedTo: assignedTo ?? "ceo",
     });
@@ -234,26 +283,28 @@ export function createApiRouter(deps: ApiDeps): Router {
   });
 
   router.get("/tickets/:id", (req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
-    const ticket = ticketManager.getById(param(req, "id"));
+    const ticket = tm.getById(param(req, "id"));
     if (!ticket) {
       res.status(404).json({ error: "Ticket not found" });
       return;
     }
-    const children = ticketManager.getChildren(ticket.id);
+    const children = tm.getChildren(ticket.id);
     res.json({ ticket, children });
   });
 
   router.patch("/tickets/:id", (req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
     const ticketId = param(req, "id");
-    const ticket = ticketManager.getById(ticketId);
+    const ticket = tm.getById(ticketId);
     if (!ticket) {
       res.status(404).json({ error: "Ticket not found" });
       return;
@@ -264,28 +315,29 @@ export function createApiRouter(deps: ApiDeps): Router {
       priority?: string;
     };
     if (status) {
-      ticketManager.updateStatus(
+      tm.updateStatus(
         ticketId,
-        status as Parameters<typeof ticketManager.updateStatus>[1],
+        status as Parameters<typeof tm.updateStatus>[1],
         "user"
       );
     }
     if (assignedTo) {
-      ticketManager.assign(ticketId, assignedTo, "user");
+      tm.assign(ticketId, assignedTo, "user");
     }
     if (priority) {
-      ticketManager.updatePriority(
+      tm.updatePriority(
         ticketId,
-        priority as Parameters<typeof ticketManager.updatePriority>[1],
+        priority as Parameters<typeof tm.updatePriority>[1],
         "user"
       );
     }
-    const updated = ticketManager.getById(ticketId);
+    const updated = tm.getById(ticketId);
     res.json({ ticket: updated });
   });
 
   router.post("/tickets/:id/comment", (req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
@@ -295,7 +347,7 @@ export function createApiRouter(deps: ApiDeps): Router {
       res.status(400).json({ error: "comment is required" });
       return;
     }
-    const ticket = ticketManager.addComment(ticketId, "user", comment);
+    const ticket = tm.addComment(ticketId, "user", comment);
     if (!ticket) {
       res.status(404).json({ error: "Ticket not found" });
       return;
@@ -337,6 +389,12 @@ export function createApiRouter(deps: ApiDeps): Router {
     res.json({ usage: orchestrator.getUsageStats() });
   });
 
+  // --- Metrics ---
+
+  router.get("/metrics", (_req: Request, res: Response) => {
+    res.json({ metrics: orchestrator.getMetrics() });
+  });
+
   // --- Settings ---
 
   router.get("/settings", (_req: Request, res: Response) => {
@@ -365,11 +423,12 @@ export function createApiRouter(deps: ApiDeps): Router {
   });
 
   router.get("/export/tickets", (_req: Request, res: Response) => {
-    if (!ticketManager) {
+    const tm = deps.ticketManager;
+    if (!tm) {
       res.status(503).json({ error: "Ticket system not available" });
       return;
     }
-    const allTickets = ticketManager.getAll();
+    const allTickets = tm.getAll();
     const filename = `hivemind-tickets-${new Date().toISOString().slice(0, 10)}.json`;
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

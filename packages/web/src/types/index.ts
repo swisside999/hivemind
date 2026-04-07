@@ -45,6 +45,15 @@ export interface ModelSelectionInfo {
   defaultModel: string;
 }
 
+export interface AgentMetrics {
+  invocations: number;
+  avgResponseTimeMs: number;
+  successCount: number;
+  errorCount: number;
+  lastInvoked: string;
+  messagesRouted: number;
+}
+
 export interface AgentWithState extends AgentConfig {
   state: AgentState;
 }

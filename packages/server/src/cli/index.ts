@@ -96,17 +96,30 @@ async function handleStart(args: string[]): Promise<void> {
   const cliInfo = validateClaudeCli();
   console.log(`Claude CLI: ${cliInfo.version}`);
 
+  const { MemoryManager } = await import("../memory/MemoryManager.js");
+  const { TicketManager } = await import("../tickets/TicketManager.js");
+  const { resolve } = await import("node:path");
+
   const pm = new ProjectManager();
   const projects = await pm.list();
 
   let workingDir = process.cwd();
   let orchestrator: Orchestrator;
+  let memoryManager: import("../memory/MemoryManager.js").MemoryManager | null = null;
+  let ticketManager: import("../tickets/TicketManager.js").TicketManager | null = null;
 
   if (projects.length > 0) {
     const projectConfig = await pm.load(projects[0].name);
     workingDir = projectConfig.workingDirectory;
+    const agentDir = pm.getAgentDir(projects[0].name);
+    memoryManager = new MemoryManager(agentDir);
+    ticketManager = new TicketManager(resolve(pm.getProjectDir(projects[0].name), ".hivemind"));
+    await ticketManager.load();
     orchestrator = new Orchestrator(workingDir);
-    await orchestrator.initialize(pm.getAgentDir(projects[0].name));
+    await orchestrator.initialize(agentDir);
+    orchestrator.connectTicketManager(ticketManager);
+    const sharedMem = await memoryManager.readSharedMemory();
+    orchestrator.setSharedMemory(sharedMem);
     console.log(`Loaded project: ${projects[0].name}`);
   } else {
     orchestrator = new Orchestrator(workingDir);
@@ -122,12 +135,19 @@ async function handleStart(args: string[]): Promise<void> {
     next();
   });
 
-  const { MemoryManager } = await import("../memory/MemoryManager.js");
-  app.use("/api", createApiRouter({ orchestrator, projectManager: pm, memoryManager: null, ticketManager: null }));
+  const deps = {
+    orchestrator,
+    projectManager: pm,
+    memoryManager,
+    ticketManager,
+    wsManager: null as import("../routes/ws.js").WsManager | null,
+  };
+  app.use("/api", createApiRouter(deps));
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
   const server = createServer(app);
-  createWebSocketServer(server, orchestrator);
+  const wsManager = createWebSocketServer(server, deps);
+  deps.wsManager = wsManager;
 
   server.listen(config.port, () => {
     console.log(`Hivemind server: http://localhost:${config.port}`);
