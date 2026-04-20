@@ -42,7 +42,7 @@
     "express": "^5.1.0",
     "ws": "^8.18.0",
     "gray-matter": "^4.0.3",
-    "uuid": "^11.1.0"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
