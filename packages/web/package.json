@@ -11,12 +11,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.2.2",
-    "dompurify": "^3.3.3",
-    "marked": "^17.0.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "zustand": "^5.0.0"
+    "@tailwindcss/postcss": "^4.3.0",
+    "dompurify": "^3.4.2",
+    "marked": "^18.0.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@types/dompurify": "^3.2.0",
